@@ -6,7 +6,17 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
+
+func TestSetPathAsSingleKey(t *testing.T) {
+	s, _ := Set(`{"a.b.c":"abc"}`, "a.b.c", "efg", SetOptions{PathOption: PathOption{RawPath: true}})
+	assert.Equal(t, `{"a.b.c":"efg"}`, s)
+
+	s, _ = Delete(`{"a.b.c":"abc","age": 100}`, "a.b.c", SetOptions{PathOption: PathOption{RawPath: true}})
+	assert.Equal(t, `{"age": 100}`, s)
+}
 
 func TestInvalidPaths(t *testing.T) {
 	var err error

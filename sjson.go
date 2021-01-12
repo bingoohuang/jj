@@ -30,7 +30,7 @@ type SetOptions struct {
 	// byte slice in order to use this field.
 	ReplaceInPlace bool
 
-	GetOption
+	PathOption
 }
 
 type pathResult struct {
@@ -41,8 +41,14 @@ type pathResult struct {
 	more  bool   // there is more path to parse
 }
 
-func parsePath(path string) (pathResult, error) {
+func parsePath(path string, sc setConfig) (pathResult, error) {
 	var r pathResult
+	if sc.RawPath {
+		r.part = path
+		r.gpart = path
+		return r, nil
+	}
+
 	if len(path) > 0 && path[0] == ':' {
 		r.force = true
 		path = path[1:]
@@ -131,8 +137,7 @@ func appendStringify(buf []byte, s string) []byte {
 }
 
 // appendBuild builds a json block from a json path.
-func appendBuild(buf []byte, array bool, paths []pathResult, raw string,
-	stringify bool) []byte {
+func appendBuild(buf []byte, array bool, paths []pathResult, raw string, stringify bool) []byte {
 	if !array {
 		buf = appendStringify(buf, paths[0].part)
 		buf = append(buf, ':')
@@ -226,12 +231,12 @@ loop:
 
 var errNoChange = &errorType{"no change"}
 
-func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, stringify, del bool) ([]byte, error) {
+func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, sc setConfig) ([]byte, error) {
 	var err error
 	var res Result
 	var found bool
-	if del {
-		if paths[0].part == "-1" && !paths[0].force {
+	if sc.del {
+		if !sc.RawPath && paths[0].part == "-1" && !paths[0].force {
 			res = Get(jstr, "#")
 			if res.Int() > 0 {
 				res = Get(jstr, strconv.FormatInt(res.Int()-1, 10))
@@ -240,13 +245,12 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, str
 		}
 	}
 	if !found {
-		res = Get(jstr, paths[0].gpart)
+		res = Get(jstr, paths[0].gpart, ApplyGetOption(sc.PathOption))
 	}
 	if res.Index > 0 {
 		if len(paths) > 1 {
 			buf = append(buf, jstr[:res.Index]...)
-			buf, err = appendRawPaths(buf, res.Raw, paths[1:], raw,
-				stringify, del)
+			buf, err = appendRawPaths(buf, res.Raw, paths[1:], raw, sc)
 			if err != nil {
 				return nil, err
 			}
@@ -255,7 +259,7 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, str
 		}
 		buf = append(buf, jstr[:res.Index]...)
 		var exidx int // additional forward stripping
-		if del {
+		if sc.del {
 			var delNextComma bool
 			buf, delNextComma = deleteTailItem(buf)
 			if delNextComma {
@@ -271,7 +275,7 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, str
 				}
 			}
 		} else {
-			if stringify {
+			if sc.stringify {
 				buf = appendStringify(buf, raw)
 			} else {
 				buf = append(buf, raw...)
@@ -280,7 +284,7 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, str
 		buf = append(buf, jstr[res.Index+len(res.Raw)+exidx:]...)
 		return buf, nil
 	}
-	if del {
+	if sc.del {
 		return nil, errNoChange
 	}
 	n, numeric := atoui(paths[0])
@@ -332,7 +336,7 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, str
 		if comma {
 			buf = append(buf, ',')
 		}
-		buf = appendBuild(buf, false, paths, raw, stringify)
+		buf = appendBuild(buf, false, paths, raw, sc.stringify)
 		buf = append(buf, '}')
 		return buf, nil
 	case '[':
@@ -357,7 +361,7 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, str
 				buf = append(buf, ',')
 			}
 
-			buf = appendBuild(buf, true, paths, raw, stringify)
+			buf = appendBuild(buf, true, paths, raw, sc.stringify)
 			buf = append(buf, ']')
 			return buf, nil
 		}
@@ -377,13 +381,17 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, str
 				buf = append(buf, ',')
 			}
 		}
-		buf = appendBuild(buf, true, paths, raw, stringify)
+		buf = appendBuild(buf, true, paths, raw, sc.stringify)
 		buf = append(buf, ']')
 		return buf, nil
 	}
 }
 
-func isOptimisticPath(path string) bool {
+func isOptimisticPath(path string, sc setConfig) bool {
+	if sc.RawPath {
+		return true
+	}
+
 	for i := 0; i < len(path); i++ {
 		if path[i] < '.' || path[i] > 'z' {
 			return false
@@ -416,17 +424,18 @@ func SetRaw(json, path, value string, options ...SetOptions) (string, error) {
 type dtype struct{}
 
 // Delete deletes a value from json for the specified path.
-func Delete(json, path string) (string, error) {
-	return Set(json, path, dtype{})
+func Delete(json, path string, options ...SetOptions) (string, error) {
+	return Set(json, path, dtype{}, options...)
 }
 
 // DeleteBytes deletes a value from json for the specified path.
-func DeleteBytes(json []byte, path string) ([]byte, error) {
-	return SetBytes(json, path, dtype{})
+func DeleteBytes(json []byte, path string, options ...SetOptions) ([]byte, error) {
+	return SetBytes(json, path, dtype{}, options...)
 }
 
 type setConfig struct {
 	stringify, del, optimistic, inplace bool
+	PathOption
 }
 
 func makeSetConfig(stringify, del, optimistic, inplace bool) setConfig {
@@ -437,8 +446,8 @@ func set(jstr, path, raw string, sc setConfig) ([]byte, error) {
 	if path == "" {
 		return nil, &errorType{"path cannot be empty"}
 	}
-	if !sc.del && sc.optimistic && isOptimisticPath(path) {
-		res := Get(jstr, path)
+	if !sc.del && sc.optimistic && isOptimisticPath(path, sc) {
+		res := Get(jstr, path, ApplyGetOption(sc.PathOption))
 		if res.Exists() && res.Index > 0 {
 			sz := len(jstr) - len(res.Raw) + len(raw)
 			if sc.stringify {
@@ -480,19 +489,19 @@ func set(jstr, path, raw string, sc setConfig) ([]byte, error) {
 	// parse the path, make sure that it does not contain invalid characters
 	// such as '#', '?', '*'
 	paths := make([]pathResult, 0, 4)
-	r, err := parsePath(path)
+	r, err := parsePath(path, sc)
 	if err != nil {
 		return nil, err
 	}
 	paths = append(paths, r)
 	for r.more {
-		if r, err = parsePath(r.path); err != nil {
+		if r, err = parsePath(r.path, sc); err != nil {
 			return nil, err
 		}
 		paths = append(paths, r)
 	}
 
-	njson, err := appendRawPaths(nil, jstr, paths, raw, sc.stringify, sc.del)
+	njson, err := appendRawPaths(nil, jstr, paths, raw, sc)
 	if err != nil {
 		return nil, err
 	}
@@ -540,14 +549,15 @@ func Set(json, path string, value interface{}, options ...SetOptions) (string, e
 // If working with bytes, this method preferred over
 // Set(string(data), path, value)
 func SetBytes(json []byte, path string, value interface{}, options ...SetOptions) ([]byte, error) {
-	var optimistic, inplace bool
+	sc := makeSetConfig(false, false, false, false)
+
 	if len(options) > 0 {
-		optimistic = options[0].Optimistic
-		inplace = options[0].ReplaceInPlace
+		sc.optimistic = options[0].Optimistic
+		sc.inplace = options[0].ReplaceInPlace
+		sc.PathOption = options[0].PathOption
 	}
 	jstr := *(*string)(unsafe.Pointer(&json))
 	var raw string
-	sc := makeSetConfig(false, false, optimistic, inplace)
 
 	switch v := value.(type) {
 	default:
@@ -596,6 +606,7 @@ func SetBytes(json []byte, path string, value interface{}, options ...SetOptions
 	return res, err
 }
 
+// If returns a if v is true, else returns b.
 func If(v bool, a, b string) string {
 	if v {
 		return a

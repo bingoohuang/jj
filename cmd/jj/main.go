@@ -240,8 +240,8 @@ func main() {
 		}
 		outb = append(outb, '\n')
 	}
-	f.Write(outb)
-	f.Close()
+	_, _ = f.Write(outb)
+	_ = f.Close()
 	return
 fail:
 	fmt.Fprintf(os.Stderr, "error: %v\n", err.Error())

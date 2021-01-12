@@ -141,15 +141,15 @@ var basicJSON = `{"age":100, "name":{"here":"B\\\"R"},
 }`
 
 func TestTimeResult(t *testing.T) {
-	assert(Get(basicJSON, "created").String() ==
+	assertBool(Get(basicJSON, "created").String() ==
 		Get(basicJSON, "created").Time().Format(time.RFC3339Nano))
 }
 
 func TestParseAny(t *testing.T) {
-	assert(Parse("100").Float() == 100)
-	assert(Parse("true").Bool())
-	assert(Parse("false").Bool() == false)
-	assert(Parse("yikes").Exists() == false)
+	assertBool(Parse("100").Float() == 100)
+	assertBool(Parse("true").Bool())
+	assertBool(Parse("false").Bool() == false)
+	assertBool(Parse("yikes").Exists() == false)
 }
 
 func TestManyVariousPathCounts(t *testing.T) {
@@ -191,7 +191,7 @@ func TestManyRecursion(t *testing.T) {
 		jso += `}`
 	}
 	path = path[1:]
-	assert(GetMany(jso, path)[0].String() == "b")
+	assertBool(GetMany(jso, path)[0].String() == "b")
 }
 
 func TestByteSafety(t *testing.T) {
@@ -230,33 +230,33 @@ func TestBasic(t *testing.T) {
 
 func TestIsArrayIsObject(t *testing.T) {
 	mtok := get(basicJSON, "loggy")
-	assert(mtok.IsObject())
-	assert(!mtok.IsArray())
+	assertBool(mtok.IsObject())
+	assertBool(!mtok.IsArray())
 
 	mtok = get(basicJSON, "loggy.programmers")
-	assert(!mtok.IsObject())
-	assert(mtok.IsArray())
+	assertBool(!mtok.IsObject())
+	assertBool(mtok.IsArray())
 
 	mtok = get(basicJSON, `loggy.programmers.#[tag="good"]#.firstName`)
-	assert(mtok.IsArray())
+	assertBool(mtok.IsArray())
 
 	mtok = get(basicJSON, `loggy.programmers.0.firstName`)
-	assert(!mtok.IsObject())
-	assert(!mtok.IsArray())
+	assertBool(!mtok.IsObject())
+	assertBool(!mtok.IsArray())
 }
 
 func TestPlus53BitInts(t *testing.T) {
 	jso := `{"IdentityData":{"GameInstanceId":634866135153775564}}`
 	value := Get(jso, "IdentityData.GameInstanceId")
-	assert(value.Uint() == 634866135153775564)
-	assert(value.Int() == 634866135153775564)
-	assert(value.Float() == 634866135153775616)
+	assertBool(value.Uint() == 634866135153775564)
+	assertBool(value.Int() == 634866135153775564)
+	assertBool(value.Float() == 634866135153775616)
 
 	jso = `{"IdentityData":{"GameInstanceId":634866135153775564.88172}}`
 	value = Get(jso, "IdentityData.GameInstanceId")
-	assert(value.Uint() == 634866135153775616)
-	assert(value.Int() == 634866135153775616)
-	assert(value.Float() == 634866135153775616.88172)
+	assertBool(value.Uint() == 634866135153775616)
+	assertBool(value.Int() == 634866135153775616)
+	assertBool(value.Float() == 634866135153775616.88172)
 
 	jso = `{
 		"min_uint64": 0,
@@ -273,22 +273,22 @@ func TestPlus53BitInts(t *testing.T) {
 		"overflow_int53": 2251799813685248
 	}`
 
-	assert(Get(jso, "min_uint53").Uint() == 0)
-	assert(Get(jso, "max_uint53").Uint() == 4503599627370495)
-	assert(Get(jso, "overflow_uint53").Int() == 4503599627370496)
-	assert(Get(jso, "min_int53").Int() == -2251799813685248)
-	assert(Get(jso, "max_int53").Int() == 2251799813685247)
-	assert(Get(jso, "overflow_int53").Int() == 2251799813685248)
-	assert(Get(jso, "min_uint64").Uint() == 0)
-	assert(Get(jso, "max_uint64").Uint() == 18446744073709551615)
+	assertBool(Get(jso, "min_uint53").Uint() == 0)
+	assertBool(Get(jso, "max_uint53").Uint() == 4503599627370495)
+	assertBool(Get(jso, "overflow_uint53").Int() == 4503599627370496)
+	assertBool(Get(jso, "min_int53").Int() == -2251799813685248)
+	assertBool(Get(jso, "max_int53").Int() == 2251799813685247)
+	assertBool(Get(jso, "overflow_int53").Int() == 2251799813685248)
+	assertBool(Get(jso, "min_uint64").Uint() == 0)
+	assertBool(Get(jso, "max_uint64").Uint() == 18446744073709551615)
 	// this next value overflows the max uint64 by one which will just
 	// flip the number to zero
-	assert(Get(jso, "overflow_uint64").Int() == 0)
-	assert(Get(jso, "min_int64").Int() == -9223372036854775808)
-	assert(Get(jso, "max_int64").Int() == 9223372036854775807)
+	assertBool(Get(jso, "overflow_uint64").Int() == 0)
+	assertBool(Get(jso, "min_int64").Int() == -9223372036854775808)
+	assertBool(Get(jso, "max_int64").Int() == 9223372036854775807)
 	// this next value overflows the max int64 by one which will just
 	// flip the number to the negative sign.
-	assert(Get(jso, "overflow_int64").Int() == -9223372036854775808)
+	assertBool(Get(jso, "overflow_int64").Int() == -9223372036854775808)
 }
 
 func TestIssue38(t *testing.T) {
@@ -304,55 +304,55 @@ func TestIssue38(t *testing.T) {
 }
 
 func TestTypes(t *testing.T) {
-	assert((Result{Type: String}).Type.String() == "String")
-	assert((Result{Type: Number}).Type.String() == "Number")
-	assert((Result{Type: Null}).Type.String() == "Null")
-	assert((Result{Type: False}).Type.String() == "False")
-	assert((Result{Type: True}).Type.String() == "True")
-	assert((Result{Type: JSON}).Type.String() == "JSON")
-	assert((Result{Type: 100}).Type.String() == "")
+	assertBool((Result{Type: String}).Type.String() == "String")
+	assertBool((Result{Type: Number}).Type.String() == "Number")
+	assertBool((Result{Type: Null}).Type.String() == "Null")
+	assertBool((Result{Type: False}).Type.String() == "False")
+	assertBool((Result{Type: True}).Type.String() == "True")
+	assertBool((Result{Type: JSON}).Type.String() == "JSON")
+	assertBool((Result{Type: 100}).Type.String() == "")
 	// bool
-	assert((Result{Type: True}).Bool() == true)
-	assert((Result{Type: False}).Bool() == false)
-	assert((Result{Type: Number, Num: 1}).Bool() == true)
-	assert((Result{Type: Number, Num: 0}).Bool() == false)
-	assert((Result{Type: String, Str: "1"}).Bool() == true)
-	assert((Result{Type: String, Str: "T"}).Bool() == true)
-	assert((Result{Type: String, Str: "t"}).Bool() == true)
-	assert((Result{Type: String, Str: "true"}).Bool() == true)
-	assert((Result{Type: String, Str: "True"}).Bool() == true)
-	assert((Result{Type: String, Str: "TRUE"}).Bool() == true)
-	assert((Result{Type: String, Str: "tRuE"}).Bool() == true)
-	assert((Result{Type: String, Str: "0"}).Bool() == false)
-	assert((Result{Type: String, Str: "f"}).Bool() == false)
-	assert((Result{Type: String, Str: "F"}).Bool() == false)
-	assert((Result{Type: String, Str: "false"}).Bool() == false)
-	assert((Result{Type: String, Str: "False"}).Bool() == false)
-	assert((Result{Type: String, Str: "FALSE"}).Bool() == false)
-	assert((Result{Type: String, Str: "fAlSe"}).Bool() == false)
-	assert((Result{Type: String, Str: "random"}).Bool() == false)
+	assertBool((Result{Type: True}).Bool() == true)
+	assertBool((Result{Type: False}).Bool() == false)
+	assertBool((Result{Type: Number, Num: 1}).Bool() == true)
+	assertBool((Result{Type: Number, Num: 0}).Bool() == false)
+	assertBool((Result{Type: String, Str: "1"}).Bool() == true)
+	assertBool((Result{Type: String, Str: "T"}).Bool() == true)
+	assertBool((Result{Type: String, Str: "t"}).Bool() == true)
+	assertBool((Result{Type: String, Str: "true"}).Bool() == true)
+	assertBool((Result{Type: String, Str: "True"}).Bool() == true)
+	assertBool((Result{Type: String, Str: "TRUE"}).Bool() == true)
+	assertBool((Result{Type: String, Str: "tRuE"}).Bool() == true)
+	assertBool((Result{Type: String, Str: "0"}).Bool() == false)
+	assertBool((Result{Type: String, Str: "f"}).Bool() == false)
+	assertBool((Result{Type: String, Str: "F"}).Bool() == false)
+	assertBool((Result{Type: String, Str: "false"}).Bool() == false)
+	assertBool((Result{Type: String, Str: "False"}).Bool() == false)
+	assertBool((Result{Type: String, Str: "FALSE"}).Bool() == false)
+	assertBool((Result{Type: String, Str: "fAlSe"}).Bool() == false)
+	assertBool((Result{Type: String, Str: "random"}).Bool() == false)
 
 	// int
-	assert((Result{Type: String, Str: "1"}).Int() == 1)
-	assert((Result{Type: True}).Int() == 1)
-	assert((Result{Type: False}).Int() == 0)
-	assert((Result{Type: Number, Num: 1}).Int() == 1)
+	assertBool((Result{Type: String, Str: "1"}).Int() == 1)
+	assertBool((Result{Type: True}).Int() == 1)
+	assertBool((Result{Type: False}).Int() == 0)
+	assertBool((Result{Type: Number, Num: 1}).Int() == 1)
 	// uint
-	assert((Result{Type: String, Str: "1"}).Uint() == 1)
-	assert((Result{Type: True}).Uint() == 1)
-	assert((Result{Type: False}).Uint() == 0)
-	assert((Result{Type: Number, Num: 1}).Uint() == 1)
+	assertBool((Result{Type: String, Str: "1"}).Uint() == 1)
+	assertBool((Result{Type: True}).Uint() == 1)
+	assertBool((Result{Type: False}).Uint() == 0)
+	assertBool((Result{Type: Number, Num: 1}).Uint() == 1)
 	// float
-	assert((Result{Type: String, Str: "1"}).Float() == 1)
-	assert((Result{Type: True}).Float() == 1)
-	assert((Result{Type: False}).Float() == 0)
-	assert((Result{Type: Number, Num: 1}).Float() == 1)
+	assertBool((Result{Type: String, Str: "1"}).Float() == 1)
+	assertBool((Result{Type: True}).Float() == 1)
+	assertBool((Result{Type: False}).Float() == 0)
+	assertBool((Result{Type: Number, Num: 1}).Float() == 1)
 }
 
 func TestForEach(t *testing.T) {
 	Result{}.ForEach(nil)
 	Result{Type: String, Str: "Hello"}.ForEach(func(_, value Result) bool {
-		assert(value.String() == "Hello")
+		assertBool(value.String() == "Hello")
 		return false
 	})
 	Result{Type: JSON, Raw: "*invalid*"}.ForEach(nil)
@@ -364,18 +364,18 @@ func TestForEach(t *testing.T) {
 		count++
 		return true
 	})
-	assert(count == 3)
+	assertBool(count == 3)
 	ParseBytes([]byte(`{"bad`)).ForEach(nil)
 	ParseBytes([]byte(`{"ok":"bad`)).ForEach(nil)
 }
 
 func TestMap(t *testing.T) {
-	assert(len(ParseBytes([]byte(`"asdf"`)).Map()) == 0)
-	assert(ParseBytes([]byte(`{"asdf":"ghjk"`)).Map()["asdf"].String() ==
+	assertBool(len(ParseBytes([]byte(`"asdf"`)).Map()) == 0)
+	assertBool(ParseBytes([]byte(`{"asdf":"ghjk"`)).Map()["asdf"].String() ==
 		"ghjk")
-	assert(len(Result{Type: JSON, Raw: "**invalid**"}.Map()) == 0)
-	assert(Result{Type: JSON, Raw: "**invalid**"}.Value() == nil)
-	assert(Result{Type: JSON, Raw: "{"}.Map() != nil)
+	assertBool(len(Result{Type: JSON, Raw: "**invalid**"}.Map()) == 0)
+	assertBool(Result{Type: JSON, Raw: "**invalid**"}.Value() == nil)
+	assertBool(Result{Type: JSON, Raw: "{"}.Map() != nil)
 }
 
 func TestBasic1(t *testing.T) {
@@ -582,12 +582,12 @@ func TestBasic5(t *testing.T) {
 	}
 }
 
-func TestGetPathAsSingleKey(t *testing.T) {
+func TestGetRawPath(t *testing.T) {
 	s := `{"a.b.c":"abc"}}`
 	if Get(s, "a.b.c").Str != "" {
 		t.Fatal("fail")
 	}
-	if Get(s, "a.b.c", PathAsSingleKey(true)).Str != "abc" {
+	if Get(s, "a.b.c", WithRawPath(true)).Str != "abc" {
 		t.Fatal("fail")
 	}
 }
@@ -622,70 +622,70 @@ func TestUnescape(t *testing.T) {
 	unescape(string([]byte{'\\', '/', '\\', 'b', '\\', 'f'}))
 }
 
-func assert(cond bool) {
+func assertBool(cond bool) {
 	if !cond {
-		panic("assert failed")
+		panic("assertBool failed")
 	}
 }
 
 func TestLess(t *testing.T) {
-	assert(!Result{Type: Null}.Less(Result{Type: Null}, true))
-	assert(Result{Type: Null}.Less(Result{Type: False}, true))
-	assert(Result{Type: Null}.Less(Result{Type: True}, true))
-	assert(Result{Type: Null}.Less(Result{Type: JSON}, true))
-	assert(Result{Type: Null}.Less(Result{Type: Number}, true))
-	assert(Result{Type: Null}.Less(Result{Type: String}, true))
-	assert(!Result{Type: False}.Less(Result{Type: Null}, true))
-	assert(Result{Type: False}.Less(Result{Type: True}, true))
-	assert(Result{Type: String, Str: "abc"}.Less(Result{
+	assertBool(!Result{Type: Null}.Less(Result{Type: Null}, true))
+	assertBool(Result{Type: Null}.Less(Result{Type: False}, true))
+	assertBool(Result{Type: Null}.Less(Result{Type: True}, true))
+	assertBool(Result{Type: Null}.Less(Result{Type: JSON}, true))
+	assertBool(Result{Type: Null}.Less(Result{Type: Number}, true))
+	assertBool(Result{Type: Null}.Less(Result{Type: String}, true))
+	assertBool(!Result{Type: False}.Less(Result{Type: Null}, true))
+	assertBool(Result{Type: False}.Less(Result{Type: True}, true))
+	assertBool(Result{Type: String, Str: "abc"}.Less(Result{
 		Type: String,
 		Str:  "bcd",
 	}, true))
-	assert(Result{Type: String, Str: "ABC"}.Less(Result{
+	assertBool(Result{Type: String, Str: "ABC"}.Less(Result{
 		Type: String,
 		Str:  "abc",
 	}, true))
-	assert(!Result{Type: String, Str: "ABC"}.Less(Result{
+	assertBool(!Result{Type: String, Str: "ABC"}.Less(Result{
 		Type: String,
 		Str:  "abc",
 	}, false))
-	assert(Result{Type: Number, Num: 123}.Less(Result{
+	assertBool(Result{Type: Number, Num: 123}.Less(Result{
 		Type: Number,
 		Num:  456,
 	}, true))
-	assert(!Result{Type: Number, Num: 456}.Less(Result{
+	assertBool(!Result{Type: Number, Num: 456}.Less(Result{
 		Type: Number,
 		Num:  123,
 	}, true))
-	assert(!Result{Type: Number, Num: 456}.Less(Result{
+	assertBool(!Result{Type: Number, Num: 456}.Less(Result{
 		Type: Number,
 		Num:  456,
 	}, true))
-	assert(stringLessInsensitive("abcde", "BBCDE"))
-	assert(stringLessInsensitive("abcde", "bBCDE"))
-	assert(stringLessInsensitive("Abcde", "BBCDE"))
-	assert(stringLessInsensitive("Abcde", "bBCDE"))
-	assert(!stringLessInsensitive("bbcde", "aBCDE"))
-	assert(!stringLessInsensitive("bbcde", "ABCDE"))
-	assert(!stringLessInsensitive("Bbcde", "aBCDE"))
-	assert(!stringLessInsensitive("Bbcde", "ABCDE"))
-	assert(!stringLessInsensitive("abcde", "ABCDE"))
-	assert(!stringLessInsensitive("Abcde", "ABCDE"))
-	assert(!stringLessInsensitive("abcde", "ABCDE"))
-	assert(!stringLessInsensitive("ABCDE", "ABCDE"))
-	assert(!stringLessInsensitive("abcde", "abcde"))
-	assert(!stringLessInsensitive("123abcde", "123Abcde"))
-	assert(!stringLessInsensitive("123Abcde", "123Abcde"))
-	assert(!stringLessInsensitive("123Abcde", "123abcde"))
-	assert(!stringLessInsensitive("123abcde", "123abcde"))
-	assert(!stringLessInsensitive("124abcde", "123abcde"))
-	assert(!stringLessInsensitive("124Abcde", "123Abcde"))
-	assert(!stringLessInsensitive("124Abcde", "123abcde"))
-	assert(!stringLessInsensitive("124abcde", "123abcde"))
-	assert(stringLessInsensitive("124abcde", "125abcde"))
-	assert(stringLessInsensitive("124Abcde", "125Abcde"))
-	assert(stringLessInsensitive("124Abcde", "125abcde"))
-	assert(stringLessInsensitive("124abcde", "125abcde"))
+	assertBool(stringLessInsensitive("abcde", "BBCDE"))
+	assertBool(stringLessInsensitive("abcde", "bBCDE"))
+	assertBool(stringLessInsensitive("Abcde", "BBCDE"))
+	assertBool(stringLessInsensitive("Abcde", "bBCDE"))
+	assertBool(!stringLessInsensitive("bbcde", "aBCDE"))
+	assertBool(!stringLessInsensitive("bbcde", "ABCDE"))
+	assertBool(!stringLessInsensitive("Bbcde", "aBCDE"))
+	assertBool(!stringLessInsensitive("Bbcde", "ABCDE"))
+	assertBool(!stringLessInsensitive("abcde", "ABCDE"))
+	assertBool(!stringLessInsensitive("Abcde", "ABCDE"))
+	assertBool(!stringLessInsensitive("abcde", "ABCDE"))
+	assertBool(!stringLessInsensitive("ABCDE", "ABCDE"))
+	assertBool(!stringLessInsensitive("abcde", "abcde"))
+	assertBool(!stringLessInsensitive("123abcde", "123Abcde"))
+	assertBool(!stringLessInsensitive("123Abcde", "123Abcde"))
+	assertBool(!stringLessInsensitive("123Abcde", "123abcde"))
+	assertBool(!stringLessInsensitive("123abcde", "123abcde"))
+	assertBool(!stringLessInsensitive("124abcde", "123abcde"))
+	assertBool(!stringLessInsensitive("124Abcde", "123Abcde"))
+	assertBool(!stringLessInsensitive("124Abcde", "123abcde"))
+	assertBool(!stringLessInsensitive("124abcde", "123abcde"))
+	assertBool(stringLessInsensitive("124abcde", "125abcde"))
+	assertBool(stringLessInsensitive("124Abcde", "125Abcde"))
+	assertBool(stringLessInsensitive("124Abcde", "125abcde"))
+	assertBool(stringLessInsensitive("124abcde", "125abcde"))
 }
 
 func TestIssue6(t *testing.T) {
@@ -750,10 +750,6 @@ var exampleJSON = `{
 		}
 	}
 }`
-
-func TestNewParse(t *testing.T) {
-	// fmt.Printf("%v\n", parse2(exampleJSON, "widget").String())
-}
 
 func TestUnmarshalMap(t *testing.T) {
 	m1 := Parse(exampleJSON).Value().(map[string]interface{})
@@ -1784,39 +1780,39 @@ func TestQueries(t *testing.T) {
 	  }`
 
 	// numbers
-	assert(Get(jso, "i*.f*.#[extra.0<11].first").Exists())
-	assert(Get(jso, "i*.f*.#[extra.0<=11].first").Exists())
-	assert(!Get(jso, "i*.f*.#[extra.0<10].first").Exists())
-	assert(Get(jso, "i*.f*.#[extra.0<=10].first").Exists())
-	assert(Get(jso, "i*.f*.#[extra.0=10].first").Exists())
-	assert(!Get(jso, "i*.f*.#[extra.0=11].first").Exists())
-	assert(Get(jso, "i*.f*.#[extra.0!=10].first").String() == "Roger")
-	assert(Get(jso, "i*.f*.#[extra.0>10].first").String() == "Roger")
-	assert(Get(jso, "i*.f*.#[extra.0>=10].first").String() == "Dale")
+	assertBool(Get(jso, "i*.f*.#[extra.0<11].first").Exists())
+	assertBool(Get(jso, "i*.f*.#[extra.0<=11].first").Exists())
+	assertBool(!Get(jso, "i*.f*.#[extra.0<10].first").Exists())
+	assertBool(Get(jso, "i*.f*.#[extra.0<=10].first").Exists())
+	assertBool(Get(jso, "i*.f*.#[extra.0=10].first").Exists())
+	assertBool(!Get(jso, "i*.f*.#[extra.0=11].first").Exists())
+	assertBool(Get(jso, "i*.f*.#[extra.0!=10].first").String() == "Roger")
+	assertBool(Get(jso, "i*.f*.#[extra.0>10].first").String() == "Roger")
+	assertBool(Get(jso, "i*.f*.#[extra.0>=10].first").String() == "Dale")
 
 	// strings
-	assert(Get(jso, `i*.f*.#[extra.0<"11"].first`).Exists())
-	assert(Get(jso, `i*.f*.#[first>"Dale"].last`).String() == "Craig")
-	assert(Get(jso, `i*.f*.#[first>="Dale"].last`).String() == "Murphy")
-	assert(Get(jso, `i*.f*.#[first="Dale"].last`).String() == "Murphy")
-	assert(Get(jso, `i*.f*.#[first!="Dale"].last`).String() == "Craig")
-	assert(!Get(jso, `i*.f*.#[first<"Dale"].last`).Exists())
-	assert(Get(jso, `i*.f*.#[first<="Dale"].last`).Exists())
-	assert(Get(jso, `i*.f*.#[first%"Da*"].last`).Exists())
-	assert(Get(jso, `i*.f*.#[first%"Dale"].last`).Exists())
-	assert(Get(jso, `i*.f*.#[first%"*a*"]#|#`).String() == "1")
-	assert(Get(jso, `i*.f*.#[first%"*e*"]#|#`).String() == "2")
-	assert(Get(jso, `i*.f*.#[first!%"*e*"]#|#`).String() == "0")
+	assertBool(Get(jso, `i*.f*.#[extra.0<"11"].first`).Exists())
+	assertBool(Get(jso, `i*.f*.#[first>"Dale"].last`).String() == "Craig")
+	assertBool(Get(jso, `i*.f*.#[first>="Dale"].last`).String() == "Murphy")
+	assertBool(Get(jso, `i*.f*.#[first="Dale"].last`).String() == "Murphy")
+	assertBool(Get(jso, `i*.f*.#[first!="Dale"].last`).String() == "Craig")
+	assertBool(!Get(jso, `i*.f*.#[first<"Dale"].last`).Exists())
+	assertBool(Get(jso, `i*.f*.#[first<="Dale"].last`).Exists())
+	assertBool(Get(jso, `i*.f*.#[first%"Da*"].last`).Exists())
+	assertBool(Get(jso, `i*.f*.#[first%"Dale"].last`).Exists())
+	assertBool(Get(jso, `i*.f*.#[first%"*a*"]#|#`).String() == "1")
+	assertBool(Get(jso, `i*.f*.#[first%"*e*"]#|#`).String() == "2")
+	assertBool(Get(jso, `i*.f*.#[first!%"*e*"]#|#`).String() == "0")
 
 	// trues
-	assert(Get(jso, `i*.f*.#[cust1=true].first`).String() == "Dale")
-	assert(Get(jso, `i*.f*.#[cust2=false].first`).String() == "Roger")
-	assert(Get(jso, `i*.f*.#[cust1!=false].first`).String() == "Dale")
-	assert(Get(jso, `i*.f*.#[cust2!=true].first`).String() == "Roger")
-	assert(!Get(jso, `i*.f*.#[cust1>true].first`).Exists())
-	assert(Get(jso, `i*.f*.#[cust1>=true].first`).Exists())
-	assert(!Get(jso, `i*.f*.#[cust2<false].first`).Exists())
-	assert(Get(jso, `i*.f*.#[cust2<=false].first`).Exists())
+	assertBool(Get(jso, `i*.f*.#[cust1=true].first`).String() == "Dale")
+	assertBool(Get(jso, `i*.f*.#[cust2=false].first`).String() == "Roger")
+	assertBool(Get(jso, `i*.f*.#[cust1!=false].first`).String() == "Dale")
+	assertBool(Get(jso, `i*.f*.#[cust2!=true].first`).String() == "Roger")
+	assertBool(!Get(jso, `i*.f*.#[cust1>true].first`).Exists())
+	assertBool(Get(jso, `i*.f*.#[cust1>=true].first`).Exists())
+	assertBool(!Get(jso, `i*.f*.#[cust2<false].first`).Exists())
+	assertBool(Get(jso, `i*.f*.#[cust2<=false].first`).Exists())
 }
 
 func TestQueryArrayValues(t *testing.T) {
@@ -1835,20 +1831,20 @@ func TestQueryArrayValues(t *testing.T) {
 			null
 		]
 	}`
-	assert(Get(jso, `a*.#[0="Bob Dylan"]#|#`).String() == "1")
-	assert(Get(jso, `a*.#[0="Bob Dylan 2"]#|#`).String() == "0")
-	assert(Get(jso, `a*.#[%"John*"]#|#`).String() == "2")
-	assert(Get(jso, `a*.#[_%"John*"]#|#`).String() == "0")
-	assert(Get(jso, `a*.#[="123"]#|#`).String() == "1")
+	assertBool(Get(jso, `a*.#[0="Bob Dylan"]#|#`).String() == "1")
+	assertBool(Get(jso, `a*.#[0="Bob Dylan 2"]#|#`).String() == "0")
+	assertBool(Get(jso, `a*.#[%"John*"]#|#`).String() == "2")
+	assertBool(Get(jso, `a*.#[_%"John*"]#|#`).String() == "0")
+	assertBool(Get(jso, `a*.#[="123"]#|#`).String() == "1")
 }
 
 func TestParenQueries(t *testing.T) {
 	jso := `{
 		"friends": [{"a":10},{"a":20},{"a":30},{"a":40}]
 	}`
-	assert(Get(jso, "friends.#(a>9)#|#").Int() == 4)
-	assert(Get(jso, "friends.#(a>10)#|#").Int() == 3)
-	assert(Get(jso, "friends.#(a>40)#|#").Int() == 0)
+	assertBool(Get(jso, "friends.#(a>9)#|#").Int() == 4)
+	assertBool(Get(jso, "friends.#(a>10)#|#").Int() == 3)
+	assertBool(Get(jso, "friends.#(a>40)#|#").Int() == 0)
 }
 
 func TestSubSelectors(t *testing.T) {
@@ -1876,8 +1872,8 @@ func TestSubSelectors(t *testing.T) {
 			]
 		}
 	  }`
-	assert(Get(jso, "[]").String() == "[]")
-	assert(Get(jso, "{}").String() == "{}")
+	assertBool(Get(jso, "[]").String() == "[]")
+	assertBool(Get(jso, "{}").String() == "{}")
 	res := Get(jso, `{`+
 		`abc:info.friends.0.first,`+
 		`info.friends.1.last,`+
@@ -1888,20 +1884,20 @@ func TestSubSelectors(t *testing.T) {
 		`}.@pretty.@ugly`).String()
 	// println(res)
 	// {"abc":"Dale","last":"Craig","\"a\ra\"":"Person","_":{"123":false},"_":[1]}
-	assert(Get(res, "abc").String() == "Dale")
-	assert(Get(res, "last").String() == "Craig")
-	assert(Get(res, "\"a\ra\"").String() == "Person")
-	assert(Get(res, "@reverse.abc").String() == "Person")
-	assert(Get(res, "_.123").String() == "false")
-	assert(Get(res, "@reverse._.0").String() == "1")
-	assert(Get(jso, "info.friends.[0.first,1.extra.0]").String() ==
+	assertBool(Get(res, "abc").String() == "Dale")
+	assertBool(Get(res, "last").String() == "Craig")
+	assertBool(Get(res, "\"a\ra\"").String() == "Person")
+	assertBool(Get(res, "@reverse.abc").String() == "Person")
+	assertBool(Get(res, "_.123").String() == "false")
+	assertBool(Get(res, "@reverse._.0").String() == "1")
+	assertBool(Get(jso, "info.friends.[0.first,1.extra.0]").String() ==
 		`["Dale",40]`)
-	assert(Get(jso, "info.friends.#.[first,extra.0]").String() ==
+	assertBool(Get(jso, "info.friends.#.[first,extra.0]").String() ==
 		`[["Dale",10],["Roger",40]]`)
 }
 
 func TestArrayCountRawOutput(t *testing.T) {
-	assert(Get(`[1,2,3,4]`, "#").Raw == "4")
+	assertBool(Get(`[1,2,3,4]`, "#").Raw == "4")
 }
 
 func TestParseQuery(t *testing.T) {
@@ -1910,28 +1906,28 @@ func TestParseQuery(t *testing.T) {
 
 	path, op, value, remain, _, ok =
 		parseQuery(`#(service_roles.#(=="one").()==asdf).cap`)
-	assert(ok &&
+	assertBool(ok &&
 		path == `service_roles.#(=="one").()` &&
 		op == "=" &&
 		value == `asdf` &&
 		remain == `.cap`)
 
 	path, op, value, remain, _, ok = parseQuery(`#(first_name%"Murphy").last`)
-	assert(ok &&
+	assertBool(ok &&
 		path == `first_name` &&
 		op == `%` &&
 		value == `"Murphy"` &&
 		remain == `.last`)
 
 	path, op, value, remain, _, ok = parseQuery(`#( first_name !% "Murphy" ).last`)
-	assert(ok &&
+	assertBool(ok &&
 		path == `first_name` &&
 		op == `!%` &&
 		value == `"Murphy"` &&
 		remain == `.last`)
 
 	path, op, value, remain, _, ok = parseQuery(`#(service_roles.#(=="one"))`)
-	assert(ok &&
+	assertBool(ok &&
 		path == `service_roles.#(=="one")` &&
 		op == `` &&
 		value == `` &&
@@ -1939,7 +1935,7 @@ func TestParseQuery(t *testing.T) {
 
 	path, op, value, remain, _, ok =
 		parseQuery(`#(a\("\"(".#(=="o\"(ne")%"ab\")").remain`)
-	assert(ok &&
+	assertBool(ok &&
 		path == `a\("\"(".#(=="o\"(ne")` &&
 		op == "%" &&
 		value == `"ab\")"` &&
@@ -1970,13 +1966,13 @@ func TestParentSubQuery(t *testing.T) {
 	  }`
 	res := Get(jso, `topology.instances.#( service_roles.#(=="one"))#.service_version`)
 	// should return two instances
-	assert(res.String() == `["1.2.3","1.2.2"]`)
+	assertBool(res.String() == `["1.2.3","1.2.2"]`)
 }
 
 func TestSingleModifier(t *testing.T) {
 	data := `{"@key": "value"}`
-	assert(Get(data, "@key").String() == "value")
-	assert(Get(data, "\\@key").String() == "value")
+	assertBool(Get(data, "@key").String() == "value")
+	assertBool(Get(data, "\\@key").String() == "value")
 }
 
 func TestModifiersInMultipaths(t *testing.T) {
@@ -1997,18 +1993,18 @@ func TestModifiersInMultipaths(t *testing.T) {
 
 	res := Get(jso, `friends.#.{age,first|@case:upper}|@ugly`)
 	exp := `[{"age":44,"@case:upper":"DALE"},{"age":68,"@case:upper":"ROGER"},{"age":47,"@case:upper":"JANE"}]`
-	assert(res.Raw == exp)
+	assertBool(res.Raw == exp)
 
 	res = Get(jso, `{friends.#.{age,first:first|@case:upper}|0.first}`)
 	exp = `{"first":"DALE"}`
-	assert(res.Raw == exp)
+	assertBool(res.Raw == exp)
 }
 
 func TestIssue141(t *testing.T) {
 	jso := `{"data": [{"q": 11, "w": 12}, {"q": 21, "w": 22}, {"q": 31, "w": 32} ], "sql": "some stuff here"}`
-	assert(Get(jso, "data.#").Int() == 3)
-	assert(Get(jso, "data.#.{q}|@ugly").Raw == `[{"q":11},{"q":21},{"q":31}]`)
-	assert(Get(jso, "data.#.q|@ugly").Raw == `[11,21,31]`)
+	assertBool(Get(jso, "data.#").Int() == 3)
+	assertBool(Get(jso, "data.#.{q}|@ugly").Raw == `[{"q":11},{"q":21},{"q":31}]`)
+	assertBool(Get(jso, "data.#.q|@ugly").Raw == `[11,21,31]`)
 }
 
 func TestChainedModifierStringArgs(t *testing.T) {
@@ -2025,29 +2021,29 @@ func TestChainedModifierStringArgs(t *testing.T) {
 		return "[" + jso + "," + arg + "]"
 	})
 	res := Get("[]", `@push:"2"|@push:"3"|@push:{"a":"b","c":["e","f"]}|@push:true|@push:10.23`)
-	assert(res.String() == `["2","3",{"a":"b","c":["e","f"]},true,10.23]`)
+	assertBool(res.String() == `["2","3",{"a":"b","c":["e","f"]},true,10.23]`)
 }
 
 func TestFlatten(t *testing.T) {
 	jso := `[1,[2],[3,4],[5,[6,[7]]],{"hi":"there"},8,[9]]`
-	assert(Get(jso, "@flatten").String() == `[1,2,3,4,5,[6,[7]],{"hi":"there"},8,9]`)
-	assert(Get(jso, `@flatten:{"deep":true}`).String() == `[1,2,3,4,5,6,7,{"hi":"there"},8,9]`)
-	assert(Get(`{"9999":1234}`, "@flatten").String() == `{"9999":1234}`)
+	assertBool(Get(jso, "@flatten").String() == `[1,2,3,4,5,[6,[7]],{"hi":"there"},8,9]`)
+	assertBool(Get(jso, `@flatten:{"deep":true}`).String() == `[1,2,3,4,5,6,7,{"hi":"there"},8,9]`)
+	assertBool(Get(`{"9999":1234}`, "@flatten").String() == `{"9999":1234}`)
 }
 
 func TestJoin(t *testing.T) {
-	assert(Get(`[{},{}]`, "@join").String() == `{}`)
-	assert(Get(`[{"a":1},{"b":2}]`, "@join").String() == `{"a":1,"b":2}`)
-	assert(Get(`[{"a":1,"b":1},{"b":2}]`, "@join").String() == `{"a":1,"b":2}`)
-	assert(Get(`[{"a":1,"b":1},{"b":2},5,{"c":3}]`, "@join").String() == `{"a":1,"b":2,"c":3}`)
-	assert(Get(`[{"a":1,"b":1},{"b":2},5,{"c":3}]`, `@join:{"preserve":true}`).String() == `{"a":1,"b":1,"b":2,"c":3}`)
-	assert(Get(`[{"a":1,"b":1},{"b":2},5,{"c":3}]`, `@join:{"preserve":true}.b`).String() == `1`)
-	assert(Get(`{"9999":1234}`, "@join").String() == `{"9999":1234}`)
+	assertBool(Get(`[{},{}]`, "@join").String() == `{}`)
+	assertBool(Get(`[{"a":1},{"b":2}]`, "@join").String() == `{"a":1,"b":2}`)
+	assertBool(Get(`[{"a":1,"b":1},{"b":2}]`, "@join").String() == `{"a":1,"b":2}`)
+	assertBool(Get(`[{"a":1,"b":1},{"b":2},5,{"c":3}]`, "@join").String() == `{"a":1,"b":2,"c":3}`)
+	assertBool(Get(`[{"a":1,"b":1},{"b":2},5,{"c":3}]`, `@join:{"preserve":true}`).String() == `{"a":1,"b":1,"b":2,"c":3}`)
+	assertBool(Get(`[{"a":1,"b":1},{"b":2},5,{"c":3}]`, `@join:{"preserve":true}.b`).String() == `1`)
+	assertBool(Get(`{"9999":1234}`, "@join").String() == `{"9999":1234}`)
 }
 
 func TestValid(t *testing.T) {
-	assert(Get("[{}", "@valid").Exists() == false)
-	assert(Get("[{}]", "@valid").Exists() == true)
+	assertBool(Get("[{}", "@valid").Exists() == false)
+	assertBool(Get("[{}]", "@valid").Exists() == true)
 }
 
 // https://github.com/tidwall/gjson/issues/152
@@ -2162,20 +2158,20 @@ func TestJoin152(t *testing.T) {
 	  }`
 
 	res := Get(jso, "historical.summary.days.#.hours|@flatten|#.humidity.value")
-	assert(res.Raw == `[92.0,92.0,91.0,91.0,67.0]`)
+	assertBool(res.Raw == `[92.0,92.0,91.0,91.0,67.0]`)
 }
 
 func TestVariousFuzz(t *testing.T) {
-	// Issue #192	assert(t, squash(`"000"hello`) == `"000"`)
-	assert(squash(`"000"`) == `"000"`)
-	assert(squash(`"000`) == `"000`)
-	assert(squash(`"`) == `"`)
+	// Issue #192	assertBool(t, squash(`"000"hello`) == `"000"`)
+	assertBool(squash(`"000"`) == `"000"`)
+	assertBool(squash(`"000`) == `"000`)
+	assertBool(squash(`"`) == `"`)
 
-	assert(squash(`[000]hello`) == `[000]`)
-	assert(squash(`[000]`) == `[000]`)
-	assert(squash(`[000`) == `[000`)
-	assert(squash(`[`) == `[`)
-	assert(squash(`]`) == `]`)
+	assertBool(squash(`[000]hello`) == `[000]`)
+	assertBool(squash(`[000]`) == `[000]`)
+	assertBool(squash(`[000`) == `[000`)
+	assertBool(squash(`[`) == `[`)
+	assertBool(squash(`]`) == `]`)
 
 	testJSON := `0.#[[{}]].@valid:"000`
 	Get(testJSON, testJSON)

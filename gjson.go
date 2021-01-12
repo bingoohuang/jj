@@ -984,8 +984,8 @@ type objectPathResult struct {
 	more  bool
 }
 
-func parseObjectPath(path string, option *GetOption) (r objectPathResult) {
-	if option.PathAsSingleKey {
+func parseObjectPath(path string, option *PathOption) (r objectPathResult) {
+	if option.RawPath {
 		r.part = path
 		return
 	}
@@ -1112,7 +1112,7 @@ func parseSquash(json string, i int) (int, string) {
 	return i, json[s:]
 }
 
-func parseObject(c *parseContext, i int, path string, option *GetOption) (int, bool) {
+func parseObject(c *parseContext, i int, path string, option *PathOption) (int, bool) {
 	var pmatch, kesc, vesc, ok, hit bool
 	var key, val string
 	rp := parseObjectPath(path, option)
@@ -1341,7 +1341,7 @@ func queryMatches(rp *arrayPathResult, value Result) bool {
 	return false
 }
 
-func parseArray(c *parseContext, i int, path string, option *GetOption) (int, bool) {
+func parseArray(c *parseContext, i int, path string, option *PathOption) (int, bool) {
 	var pmatch, vesc, ok, hit bool
 	var val string
 	var h int
@@ -1839,34 +1839,34 @@ type parseContext struct {
 	calcd bool
 }
 
-// GetOption defines the options to the Get method.
-type GetOption struct {
-	// PathAsSingleKey will treat the path as a single json key other than syntaxed json path.
-	PathAsSingleKey bool
+// PathOption defines the options to the Get method.
+type PathOption struct {
+	// RawPath will treat the path as a single json key other than syntaxed json path.
+	RawPath bool
 }
 
-// GetOptionFn is the proto type of function option.
-type GetOptionFn func(*GetOption)
+// PathOptionFn is the proto type of function option.
+type PathOptionFn func(*PathOption)
 
-// PathAsSingleKey set the options PathAsSingleKey to true.
-func PathAsSingleKey(v bool) GetOptionFn {
-	return func(o *GetOption) {
-		o.PathAsSingleKey = v
+// WithRawPath set the options WithRawPath to true.
+func WithRawPath(v bool) PathOptionFn {
+	return func(o *PathOption) {
+		o.RawPath = v
 	}
 }
 
-// Apply set the options PathAsSingleKey to true.
-func Apply(v GetOption) GetOptionFn {
-	return func(o *GetOption) {
+// ApplyGetOption set the options WithRawPath to true.
+func ApplyGetOption(v PathOption) PathOptionFn {
+	return func(o *PathOption) {
 		*o = v
 	}
 }
 
-// GetOptionFns is the slice of GetOptionFn.
-type GetOptionFns []GetOptionFn
+// GetOptionFns is the slice of PathOptionFn.
+type GetOptionFns []PathOptionFn
 
 // Apply apply option setting functions to the o.
-func (fns GetOptionFns) Apply(o *GetOption) *GetOption {
+func (fns GetOptionFns) Apply(o *PathOption) *PathOption {
 	for _, f := range fns {
 		f(o)
 	}
@@ -1906,9 +1906,9 @@ func (fns GetOptionFns) Apply(o *GetOption) *GetOption {
 // Invalid json will not panic, but it may return back unexpected results.
 // If you are consuming JSON from an unpredictable source then you may want to
 // use the Valid function first.
-func Get(json, path string, optionsFns ...GetOptionFn) Result {
-	option := GetOptionFns(optionsFns).Apply(&GetOption{})
-	if !option.PathAsSingleKey && len(path) > 1 {
+func Get(json, path string, optionsFns ...PathOptionFn) Result {
+	option := GetOptionFns(optionsFns).Apply(&PathOption{})
+	if !option.RawPath && len(path) > 1 {
 		if !DisableModifiers {
 			if path[0] == '@' {
 				// possible modifier
@@ -1989,7 +1989,7 @@ func Get(json, path string, optionsFns ...GetOptionFn) Result {
 	}
 	var i int
 	c := &parseContext{json: json}
-	if !option.PathAsSingleKey && len(path) >= 2 && path[0] == '.' && path[1] == '.' {
+	if !option.RawPath && len(path) >= 2 && path[0] == '.' && path[1] == '.' {
 		parseArray(c, 0, path[2:], option)
 	} else {
 		for ; i < len(c.json); i++ {
