@@ -959,9 +959,9 @@ The `-u` flag will compress the json into the fewest characters possible by squa
 A quick comparison of jj to [jq](https://stedolan.github.io/jq/). 
 The test [json file](https://github.com/tidwall/sf-city-lots-json) is 180MB file of 206,560 city parcels in San Francisco.
 
-*Tested on a 2015 Macbook Pro running jq 1.5 and jj 1.0.0*
+*Tested on a 2018 Macbook Pro running jq 1.6 and jj 1.0.0*
 
-#### Get the lot number for the parcel at index 10000
+#### Get a lot of number for the parcel at index 10000
 
 ```sh
 [ 00:26:20 ] ❯ time cat citylots.json | jq -cM ".features[10000].properties.LOT_NUM"

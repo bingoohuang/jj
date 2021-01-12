@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	version = "0.0.1"
+	version = "1.0.0"
 	tag     = "jj - JSON Stream Editor " + version
 	usage   = `
 usage: jj [-v value] [-purnOD] [-i infile] [-o outfile] keypath
