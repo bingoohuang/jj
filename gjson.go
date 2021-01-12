@@ -2203,11 +2203,6 @@ func parseAny(json string, i int, hit bool) (int, Result, bool) {
 	return i, res, false
 }
 
-var ( // used for testing
-	testWatchForFallback bool
-	testLastWasFallback  bool
-)
-
 // GetMany searches json for the multiple paths.
 // The return value is a Result array where the number of items
 // will be equal to the number of input paths.

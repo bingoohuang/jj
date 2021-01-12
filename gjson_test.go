@@ -162,14 +162,11 @@ func TestManyVariousPathCounts(t *testing.T) {
 	expects := []string{"a", "b", "c"}
 	for _, count := range counts {
 		var gpaths []string
-		var gexpects []string
 		for i := 0; i < count; i++ {
 			if i < len(paths) {
 				gpaths = append(gpaths, paths[i])
-				gexpects = append(gexpects, expects[i])
 			} else {
 				gpaths = append(gpaths, fmt.Sprintf("not%d", i))
-				gexpects = append(gexpects, "null")
 			}
 		}
 		results := GetMany(jso, gpaths...)
@@ -772,7 +769,7 @@ func TestUnmarshalMap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(b1, b2) != 0 {
+	if !bytes.Equal(b1, b2) {
 		t.Fatal("b1 != b2")
 	}
 }
@@ -818,10 +815,6 @@ var manyJSON = `  {
 }`
 
 func TestManyBasic(t *testing.T) {
-	testWatchForFallback = true
-	defer func() {
-		testWatchForFallback = false
-	}()
 	testMany := func(shouldFallback bool, expect string, paths ...string) {
 		results := GetManyBytes(
 			[]byte(manyJSON),
@@ -952,49 +945,6 @@ func TestRandomMany(t *testing.T) {
 		}
 		GetMany(lstr, paths...)
 	}
-}
-
-type ComplicatedType struct {
-	unsettable int
-	Tagged     string `jso:"tagged"`
-	NotTagged  bool
-	Nested     struct {
-		Yellow string `jso:"yellow"`
-	}
-	NestedTagged struct {
-		Green string
-		Map   map[string]interface{}
-		Ints  struct {
-			Int   int `jso:"int"`
-			Int8  int8
-			Int16 int16
-			Int32 int32
-			Int64 int64 `jso:"int64"`
-		}
-		Uints struct {
-			Uint   uint
-			Uint8  uint8
-			Uint16 uint16
-			Uint32 uint32
-			Uint64 uint64
-		}
-		Floats struct {
-			Float64 float64
-			Float32 float32
-		}
-		Byte byte
-		Bool bool
-	} `jso:"nestedTagged"`
-	LeftOut      string `jso:"-"`
-	SelfPtr      *ComplicatedType
-	SelfSlice    []ComplicatedType
-	SelfSlicePtr []*ComplicatedType
-	SelfPtrSlice *[]ComplicatedType
-	Interface    interface{} `jso:"interface"`
-	Array        [3]int
-	Time         time.Time `jso:"time"`
-	Binary       []byte
-	NonBinary    []byte
 }
 
 var complicatedJSON = `

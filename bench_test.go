@@ -56,26 +56,32 @@ func BenchmarkGJSONGet(t *testing.B) {
 			}
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
+
 func BenchmarkGJSONGetMany4Paths(t *testing.B) {
 	benchmarkGJSONGetManyN(t, 4)
 }
+
 func BenchmarkGJSONGetMany8Paths(t *testing.B) {
 	benchmarkGJSONGetManyN(t, 8)
 }
+
 func BenchmarkGJSONGetMany16Paths(t *testing.B) {
 	benchmarkGJSONGetManyN(t, 16)
 }
+
 func BenchmarkGJSONGetMany32Paths(t *testing.B) {
 	benchmarkGJSONGetManyN(t, 32)
 }
+
 func BenchmarkGJSONGetMany64Paths(t *testing.B) {
 	benchmarkGJSONGetManyN(t, 64)
 }
+
 func BenchmarkGJSONGetMany128Paths(t *testing.B) {
 	benchmarkGJSONGetManyN(t, 128)
 }
+
 func benchmarkGJSONGetManyN(t *testing.B, n int) {
 	var paths []string
 	for len(paths) < n {
@@ -95,7 +101,6 @@ func benchmarkGJSONGetManyN(t *testing.B, n int) {
 			}
 		}
 	}
-	t.N *= len(paths) // because we are running against 3 paths
 }
 
 func BenchmarkGJSONUnmarshalMap(t *testing.B) {
@@ -123,7 +128,6 @@ func BenchmarkGJSONUnmarshalMap(t *testing.B) {
 			}
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
 
 func BenchmarkJSONUnmarshalMap(t *testing.B) {
@@ -154,7 +158,6 @@ func BenchmarkJSONUnmarshalMap(t *testing.B) {
 			}
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
 
 func BenchmarkJSONUnmarshalStruct(t *testing.B) {
@@ -182,7 +185,6 @@ func BenchmarkJSONUnmarshalStruct(t *testing.B) {
 			}
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
 
 func BenchmarkJSONDecoder(t *testing.B) {
@@ -228,7 +230,6 @@ func BenchmarkJSONDecoder(t *testing.B) {
 			}
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
 
 func BenchmarkFFJSONLexer(t *testing.B) {
@@ -272,7 +273,6 @@ func BenchmarkFFJSONLexer(t *testing.B) {
 			}
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
 
 func skipCC(l *jlexer.Lexer, n int) {
@@ -283,6 +283,7 @@ func skipCC(l *jlexer.Lexer, n int) {
 		l.WantComma()
 	}
 }
+
 func skipGroup(l *jlexer.Lexer, n int) {
 	l.WantColon()
 	l.Delim('{')
@@ -290,6 +291,7 @@ func skipGroup(l *jlexer.Lexer, n int) {
 	l.Delim('}')
 	l.WantComma()
 }
+
 func easyJSONWindowName(t *testing.B, l *jlexer.Lexer) {
 	if l.String() == "window" {
 		l.WantColon()
@@ -303,6 +305,7 @@ func easyJSONWindowName(t *testing.B, l *jlexer.Lexer) {
 		}
 	}
 }
+
 func easyJSONImageHOffset(t *testing.B, l *jlexer.Lexer) {
 	if l.String() == "image" {
 		l.WantColon()
@@ -316,6 +319,7 @@ func easyJSONImageHOffset(t *testing.B, l *jlexer.Lexer) {
 		}
 	}
 }
+
 func easyJSONTextOnMouseUp(t *testing.B, l *jlexer.Lexer) {
 	if l.String() == "text" {
 		l.WantColon()
@@ -329,6 +333,7 @@ func easyJSONTextOnMouseUp(t *testing.B, l *jlexer.Lexer) {
 		}
 	}
 }
+
 func easyJSONWidget(t *testing.B, l *jlexer.Lexer, j int) {
 	l.WantColon()
 	l.Delim('{')
@@ -353,6 +358,7 @@ func easyJSONWidget(t *testing.B, l *jlexer.Lexer, j int) {
 		easyJSONTextOnMouseUp(t, l)
 	}
 }
+
 func BenchmarkEasyJSONLexer(t *testing.B) {
 	t.ReportAllocs()
 	t.ResetTimer()
@@ -365,7 +371,6 @@ func BenchmarkEasyJSONLexer(t *testing.B) {
 			}
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
 
 func BenchmarkJSONParserGet(t *testing.B) {
@@ -394,8 +399,8 @@ func BenchmarkJSONParserGet(t *testing.B) {
 			}
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
+
 func jsoniterWindowName(t *testing.B, iter *jsoniter.Iterator) {
 	var v string
 	for {
@@ -443,6 +448,7 @@ func jsoniterTextOnMouseUp(t *testing.B, iter *jsoniter.Iterator) {
 		t.Fatal("did not find the value")
 	}
 }
+
 func jsoniterImageOffset(t *testing.B, iter *jsoniter.Iterator) {
 	var v int
 	for {
@@ -466,6 +472,7 @@ func jsoniterImageOffset(t *testing.B, iter *jsoniter.Iterator) {
 		t.Fatal("did not find the value")
 	}
 }
+
 func jsoniterWidget(t *testing.B, iter *jsoniter.Iterator, j int) {
 	for {
 		key := iter.ReadObject()
@@ -494,7 +501,6 @@ func BenchmarkJSONIterator(t *testing.B) {
 			jsoniterWidget(t, iter, j)
 		}
 	}
-	t.N *= len(benchPaths) // because we are running against 3 paths
 }
 
 var massiveJSON = func() string {
@@ -518,6 +524,7 @@ func BenchmarkConvertNone(t *testing.B) {
 		Get(mj, "50.widget.text.onMouseUp")
 	}
 }
+
 func BenchmarkConvertGet(t *testing.B) {
 	data := []byte(massiveJSON)
 	t.ReportAllocs()
@@ -526,6 +533,7 @@ func BenchmarkConvertGet(t *testing.B) {
 		Get(string(data), "50.widget.text.onMouseUp")
 	}
 }
+
 func BenchmarkConvertGetBytes(t *testing.B) {
 	data := []byte(massiveJSON)
 	t.ReportAllocs()
