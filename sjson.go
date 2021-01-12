@@ -29,6 +29,8 @@ type SetOptions struct {
 	// The Optimistic flag must be set to true and the input must be a
 	// byte slice in order to use this field.
 	ReplaceInPlace bool
+
+	GetOption
 }
 
 type pathResult struct {
@@ -224,8 +226,7 @@ loop:
 
 var errNoChange = &errorType{"no change"}
 
-func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string,
-	stringify, del bool) ([]byte, error) {
+func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, stringify, del bool) ([]byte, error) {
 	var err error
 	var res Result
 	var found bool
@@ -405,7 +406,7 @@ func SetRaw(json, path, value string, options ...SetOptions) (string, error) {
 	if len(options) > 0 {
 		optimistic = options[0].Optimistic
 	}
-	res, err := set(json, path, value, false, false, optimistic, false)
+	res, err := set(json, path, value, makeSetConfig(false, false, optimistic, false))
 	if err == errNoChange {
 		return json, nil
 	}
@@ -424,25 +425,33 @@ func DeleteBytes(json []byte, path string) ([]byte, error) {
 	return SetBytes(json, path, dtype{})
 }
 
-func set(jstr, path, raw string, stringify, del, optimistic, inplace bool) ([]byte, error) {
+type setConfig struct {
+	stringify, del, optimistic, inplace bool
+}
+
+func makeSetConfig(stringify, del, optimistic, inplace bool) setConfig {
+	return setConfig{stringify: stringify, del: del, optimistic: optimistic, inplace: inplace}
+}
+
+func set(jstr, path, raw string, sc setConfig) ([]byte, error) {
 	if path == "" {
 		return nil, &errorType{"path cannot be empty"}
 	}
-	if !del && optimistic && isOptimisticPath(path) {
+	if !sc.del && sc.optimistic && isOptimisticPath(path) {
 		res := Get(jstr, path)
 		if res.Exists() && res.Index > 0 {
 			sz := len(jstr) - len(res.Raw) + len(raw)
-			if stringify {
+			if sc.stringify {
 				sz += 2
 			}
-			if inplace && sz <= len(jstr) {
-				if !stringify || !mustMarshalString(raw) {
+			if sc.inplace && sz <= len(jstr) {
+				if !sc.stringify || !mustMarshalString(raw) {
 					jsonh := *(*reflect.StringHeader)(unsafe.Pointer(&jstr))
 					jsonbh := reflect.SliceHeader{
 						Data: jsonh.Data, Len: jsonh.Len, Cap: jsonh.Len,
 					}
 					jbytes := *(*[]byte)(unsafe.Pointer(&jsonbh))
-					if stringify {
+					if sc.stringify {
 						jbytes[res.Index] = '"'
 						copy(jbytes[res.Index+1:], raw)
 						jbytes[res.Index+1+len(raw)] = '"'
@@ -459,7 +468,7 @@ func set(jstr, path, raw string, stringify, del, optimistic, inplace bool) ([]by
 			}
 			buf := make([]byte, 0, sz)
 			buf = append(buf, jstr[:res.Index]...)
-			if stringify {
+			if sc.stringify {
 				buf = appendStringify(buf, raw)
 			} else {
 				buf = append(buf, raw...)
@@ -483,7 +492,7 @@ func set(jstr, path, raw string, stringify, del, optimistic, inplace bool) ([]by
 		paths = append(paths, r)
 	}
 
-	njson, err := appendRawPaths(nil, jstr, paths, raw, stringify, del)
+	njson, err := appendRawPaths(nil, jstr, paths, raw, sc.stringify, sc.del)
 	if err != nil {
 		return nil, err
 	}
@@ -537,46 +546,50 @@ func SetBytes(json []byte, path string, value interface{}, options ...SetOptions
 		inplace = options[0].ReplaceInPlace
 	}
 	jstr := *(*string)(unsafe.Pointer(&json))
-	var res []byte
-	var err error
+	var raw string
+	sc := makeSetConfig(false, false, optimistic, inplace)
+
 	switch v := value.(type) {
 	default:
 		b, merr := jsongo.Marshal(value)
 		if merr != nil {
 			return nil, merr
 		}
-		raw := *(*string)(unsafe.Pointer(&b))
-		res, err = set(jstr, path, raw, false, false, optimistic, inplace)
+		raw = *(*string)(unsafe.Pointer(&b))
 	case dtype:
-		res, err = set(jstr, path, "", false, true, optimistic, inplace)
+		raw = ""
+		sc.del = true
 	case string:
-		res, err = set(jstr, path, v, true, false, optimistic, inplace)
+		raw = v
+		sc.stringify = true
 	case []byte:
-		raw := *(*string)(unsafe.Pointer(&v))
-		res, err = set(jstr, path, raw, true, false, optimistic, inplace)
+		raw = *(*string)(unsafe.Pointer(&v))
+		sc.stringify = true
 	case bool:
-		res, err = set(jstr, path, If(v, "true", "false"), false, false, optimistic, inplace)
+		raw = If(v, "true", "false")
 	case int8:
-		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10), false, false, optimistic, inplace)
+		raw = strconv.FormatInt(int64(v), 10)
 	case int16:
-		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10), false, false, optimistic, inplace)
+		raw = strconv.FormatInt(int64(v), 10)
 	case int32:
-		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10), false, false, optimistic, inplace)
+		raw = strconv.FormatInt(int64(v), 10)
 	case int64:
-		res, err = set(jstr, path, strconv.FormatInt(v, 10), false, false, optimistic, inplace)
+		raw = strconv.FormatInt(v, 10)
 	case uint8:
-		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10), false, false, optimistic, inplace)
+		raw = strconv.FormatUint(uint64(v), 10)
 	case uint16:
-		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10), false, false, optimistic, inplace)
+		raw = strconv.FormatUint(uint64(v), 10)
 	case uint32:
-		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10), false, false, optimistic, inplace)
+		raw = strconv.FormatUint(uint64(v), 10)
 	case uint64:
-		res, err = set(jstr, path, strconv.FormatUint(v, 10), false, false, optimistic, inplace)
+		raw = strconv.FormatUint(v, 10)
 	case float32:
-		res, err = set(jstr, path, strconv.FormatFloat(float64(v), 'f', -1, 64), false, false, optimistic, inplace)
+		raw = strconv.FormatFloat(float64(v), 'f', -1, 64)
 	case float64:
-		res, err = set(jstr, path, strconv.FormatFloat(v, 'f', -1, 64), false, false, optimistic, inplace)
+		raw = strconv.FormatFloat(v, 'f', -1, 64)
 	}
+
+	res, err := set(jstr, path, raw, sc)
 	if err == errNoChange {
 		return json, nil
 	}
@@ -597,12 +610,13 @@ func If(v bool, a, b string) string {
 func SetRawBytes(json []byte, path string, value []byte, options ...SetOptions) ([]byte, error) {
 	jstr := *(*string)(unsafe.Pointer(&json))
 	vstr := *(*string)(unsafe.Pointer(&value))
-	var optimistic, inplace bool
+	sc := makeSetConfig(false, false, false, false)
 	if len(options) > 0 {
-		optimistic = options[0].Optimistic
-		inplace = options[0].ReplaceInPlace
+		sc.optimistic = options[0].Optimistic
+		sc.inplace = options[0].ReplaceInPlace
 	}
-	res, err := set(jstr, path, vstr, false, false, optimistic, inplace)
+
+	res, err := set(jstr, path, vstr, sc)
 	if err == errNoChange {
 		return json, nil
 	}

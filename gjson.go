@@ -1855,6 +1855,13 @@ func PathAsSingleKey(v bool) GetOptionFn {
 	}
 }
 
+// Apply set the options PathAsSingleKey to true.
+func Apply(v GetOption) GetOptionFn {
+	return func(o *GetOption) {
+		*o = v
+	}
+}
+
 // GetOptionFns is the slice of GetOptionFn.
 type GetOptionFns []GetOptionFn
 
