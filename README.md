@@ -1,14 +1,12 @@
 # jj
 
-To start using jj, install Go and run `go get`: `go get github.com/bingoohuang/jj`
-
-## GJSON
-
-GJSON (get json values quickly) provides a [fast](#performance) and [simple](#get-a-value) way to get values from a json document.
+JJ (get/set json values quickly) provides a [fast](#performance) and [simple](#get-a-value) way to get/set values from a json document.
 It has features such as [one line retrieval](#get-a-value), [dot notation paths](#path-syntax), [iteration](#iterate-through-an-object-or-array), 
 and [parsing json lines](#json-lines).
 
-### Get a value
+To start using jj, install Go and run `go get`: `go get github.com/bingoohuang/jj`
+
+## Get/Set a value
 
 jj.Get searches json for the specified path. A path is in dot syntax, such as "name.last" or "age". 
 When the value is found it's returned immediately.
@@ -16,19 +14,24 @@ When the value is found it's returned immediately.
 ```go
 package main
 
-import "github.com/bingoohuang/jj"
+import (
+	"fmt"
+	"github.com/bingoohuang/jj"
+)
 
 func main() {
 	jso := `{"name":{"first":"Janet","last":"Prichard"},"age":47}`
 	value := jj.Get(jso, "name.last")
-	println(value.String()) // Print: Prichard
+	fmt.Println(value.String()) // Print: Prichard
+	jso, _ = jj.Set(jso, "name.last", "Anderson")
+	fmt.Println(jso) //  Print:  {"name":{"first":"Janet","last":"Anderson"},"age":47}
 }
 ```
 
 *There's also the [jj.GetMany](#get-multiple-values-at-once) function to get multiple values at once, 
 and [jj.GetBytes](#working-with-bytes) for working with JSON byte slices.*
 
-### Path Syntax
+## Get Path Syntax
 
 Below is a quick overview of the path syntax, for more complete information please
 check out [GJSON Syntax](SYNTAX.md).
@@ -80,9 +83,113 @@ friends.#(first!%"D*").last        >> "Craig"
 friends.#(nets.#(=="fb"))#.first   >> ["Dale","Roger"]
 ```
 
-### Result Type
+## Set Path syntax
 
-GJSON supports the json types `string`, `number`, `bool`, and `null`.
+A path is a series of keys separated by a dot.
+The dot and colon characters can be escaped with ``\``.
+
+```json
+{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+	{"first": "James", "last": "Murphy"},
+	{"first": "Roger", "last": "Craig"}
+  ]
+}
+```
+```
+"name.last"          >> "Anderson"
+"age"                >> 37
+"children.1"         >> "Alex"
+"friends.1.last"     >> "Craig"
+"children.-1"        >> appends a new value to the end of the children array
+```
+
+Normally number keys are used to modify arrays, but it's possible to force a numeric object key by using the colon character:
+
+```json
+{
+  "users":{
+    "2313":{"name":"Sara"},
+    "7839":{"name":"Andy"}
+  }
+}
+```
+
+A colon path would look like:
+
+```
+"users.:2313.name"    >> "Sara"
+```
+
+Supported types
+---------------
+
+Pretty much any type is supported:
+
+```go
+jj.Set(`{"key":true}`, "key", nil)
+jj.Set(`{"key":true}`, "key", false)
+jj.Set(`{"key":true}`, "key", 1)
+jj.Set(`{"key":true}`, "key", 10.5)
+jj.Set(`{"key":true}`, "key", "hello")
+jj.Set(`{"key":true}`, "key", map[string]interface{}{"hello":"world"})
+```
+
+When a type is not recognized, SJSON will fallback to the `encoding/json` Marshaller.
+
+
+Examples
+--------
+
+```go
+// Set a value from empty document:
+value, _ := jj.Set("", "name", "Tom")
+println(value) // Output: {"name":"Tom"}
+
+// Set a nested value from empty document:
+value, _ = jj.Set("", "name.last", "Anderson")
+println(value)  // Output: {"name":{"last":"Anderson"}}
+
+// Set a new value:
+value, _ = jj.Set(`{"name":{"last":"Anderson"}}`, "name.first", "Sara")
+println(value) // Output: {"name":{"first":"Sara","last":"Anderson"}}
+
+// Update an existing value:
+value, _ = jj.Set(`{"name":{"last":"Anderson"}}`, "name.last", "Smith")
+println(value) // Output: {"name":{"last":"Smith"}}
+
+// Set a new array value:
+value, _ = jj.Set(`{"friends":["Andy","Carol"]}`, "friends.2", "Sara")
+println(value) // Output: {"friends":["Andy","Carol","Sara"]
+
+// Append an array value by using the `-1` key in a path:
+value, _ = jj.Set(`{"friends":["Andy","Carol"]}`, "friends.-1", "Sara")
+println(value) // Output: {"friends":["Andy","Carol","Sara"]
+
+// Append an array value that is past the end:
+value, _ = jj.Set(`{"friends":["Andy","Carol"]}`, "friends.4", "Sara")
+println(value) // Output: {"friends":["Andy","Carol",null,null,"Sara"]
+
+// Delete a value:
+value, _ = jj.Delete(`{"name":{"first":"Sara","last":"Anderson"}}`, "name.first")
+println(value)  // Output: {"name":{"last":"Anderson"}}
+
+// Delete an array value:
+value, _ = jj.Delete(`{"friends":["Andy","Carol"]}`, "friends.1")
+println(value) // Output: {"friends":["Andy"]}
+
+// Delete the last array value:
+value, _ = jj.Delete(`{"friends":["Andy","Carol"]}`, "friends.-1")
+println(value) // Output: {"friends":["Andy"]}
+```
+
+## Result Type
+
+jj.Get supports the json types `string`, `number`, `bool`, and `null`.
 Arrays and Objects are returned as their raw json types.
 
 The `Result` type holds one of these:
@@ -146,7 +253,7 @@ result.Int() int64    // -9223372036854775808 to 9223372036854775807
 result.Uint() int64   // 0 to 18446744073709551615
 ```
 
-### Modifiers and path chaining
+## Modifiers and path chaining
 
 A modifier is a path component that performs custom processing on the json.
 
@@ -171,7 +278,7 @@ There are currently the following built-in modifiers:
 - `@flatten`: Flattens an array.
 - `@join`: Joins multiple objects into a single object.
 
-#### Modifier arguments
+### Modifier arguments
 
 A modifier may accept an optional argument. The argument can be a valid JSON
 document or just characters.
@@ -201,7 +308,7 @@ Which makes the json pretty and orders all of its keys.
 *The full list of `@pretty` options are `sortKeys`, `indent`, `prefix`, and `width`.
 Please see [Pretty Options](#customized-output) for more information.*
 
-#### Custom modifiers
+### Custom modifiers
 
 You can also add custom modifiers.
 
