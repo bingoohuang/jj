@@ -233,7 +233,7 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string,
 		if paths[0].part == "-1" && !paths[0].force {
 			res = Get(jstr, "#")
 			if res.Int() > 0 {
-				res = Get(jstr, strconv.FormatInt(int64(res.Int()-1), 10))
+				res = Get(jstr, strconv.FormatInt(res.Int()-1, 10))
 				found = true
 			}
 		}
@@ -424,8 +424,7 @@ func DeleteBytes(json []byte, path string) ([]byte, error) {
 	return SetBytes(json, path, dtype{})
 }
 
-func set(jstr, path, raw string,
-	stringify, del, optimistic, inplace bool) ([]byte, error) {
+func set(jstr, path, raw string, stringify, del, optimistic, inplace bool) ([]byte, error) {
 	if path == "" {
 		return nil, &errorType{"path cannot be empty"}
 	}
@@ -445,12 +444,12 @@ func set(jstr, path, raw string,
 					jbytes := *(*[]byte)(unsafe.Pointer(&jsonbh))
 					if stringify {
 						jbytes[res.Index] = '"'
-						copy(jbytes[res.Index+1:], []byte(raw))
+						copy(jbytes[res.Index+1:], raw)
 						jbytes[res.Index+1+len(raw)] = '"'
 						copy(jbytes[res.Index+1+len(raw)+1:],
 							jbytes[res.Index+len(res.Raw):])
 					} else {
-						copy(jbytes[res.Index:], []byte(raw))
+						copy(jbytes[res.Index:], raw)
 						copy(jbytes[res.Index+len(raw):],
 							jbytes[res.Index+len(res.Raw):])
 					}
@@ -556,46 +555,40 @@ func SetBytes(json []byte, path string, value interface{}, options ...SetOptions
 		raw := *(*string)(unsafe.Pointer(&v))
 		res, err = set(jstr, path, raw, true, false, optimistic, inplace)
 	case bool:
-		if v {
-			res, err = set(jstr, path, "true", false, false, optimistic, inplace)
-		} else {
-			res, err = set(jstr, path, "false", false, false, optimistic, inplace)
-		}
+		res, err = set(jstr, path, If(v, "true", "false"), false, false, optimistic, inplace)
 	case int8:
-		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10), false, false, optimistic, inplace)
 	case int16:
-		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10), false, false, optimistic, inplace)
 	case int32:
-		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10), false, false, optimistic, inplace)
 	case int64:
-		res, err = set(jstr, path, strconv.FormatInt(int64(v), 10),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatInt(v, 10), false, false, optimistic, inplace)
 	case uint8:
-		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10), false, false, optimistic, inplace)
 	case uint16:
-		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10), false, false, optimistic, inplace)
 	case uint32:
-		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10), false, false, optimistic, inplace)
 	case uint64:
-		res, err = set(jstr, path, strconv.FormatUint(uint64(v), 10),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatUint(v, 10), false, false, optimistic, inplace)
 	case float32:
-		res, err = set(jstr, path, strconv.FormatFloat(float64(v), 'f', -1, 64),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatFloat(float64(v), 'f', -1, 64), false, false, optimistic, inplace)
 	case float64:
-		res, err = set(jstr, path, strconv.FormatFloat(float64(v), 'f', -1, 64),
-			false, false, optimistic, inplace)
+		res, err = set(jstr, path, strconv.FormatFloat(v, 'f', -1, 64), false, false, optimistic, inplace)
 	}
 	if err == errNoChange {
 		return json, nil
 	}
 	return res, err
+}
+
+func If(v bool, a, b string) string {
+	if v {
+		return a
+	}
+
+	return b
 }
 
 // SetRawBytes sets a raw json value for the specified path.

@@ -142,7 +142,7 @@ func TestSjsonBasic(t *testing.T) {
 		`  [ 1,2  ] `,
 		"-1", `3`)
 	testRaw(t, setInt, `[1234]`, ``, `0`, int64(1234))
-	testRaw(t, setFloat, `[1234.5]`, ``, `0`, float64(1234.5))
+	testRaw(t, setFloat, `[1234.5]`, ``, `0`, 1234.5)
 	testRaw(t, setString, `["1234.5"]`, ``, `0`, "1234.5")
 	testRaw(t, setBool, `[true]`, ``, `0`, true)
 	testRaw(t, setBool, `[null]`, ``, `0`, nil)
