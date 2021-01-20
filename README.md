@@ -935,6 +935,18 @@ $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name
 }
 ```
 
+```sh
+$ echo '{"foo": "lorem", "bar": "ipsum"}{"foo": "lorem", "bar": "ipsum"}' | jj
+{
+  "foo": "lorem",
+  "bar": "ipsum"
+}
+{
+  "foo": "lorem",
+  "bar": "ipsum"
+}
+```
+
 Also the keypath is optional, allowing for the entire json document to be made pretty.
 
 ```sh

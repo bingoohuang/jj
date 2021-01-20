@@ -36,13 +36,20 @@ func Pretty(json []byte, options ...Options) []byte {
 		buf = append(buf, opts.Prefix...)
 	}
 
-	buf, _, _, _ = appendPrettyAny(buf, json, 0, makePrettyOption(true,
-		opts.Width, opts.Prefix, opts.Indent, opts.SortKeys,
-		0, 0, -1))
-	if len(buf) > 0 {
-		buf = append(buf, '\n')
+	totalBuf := make([]byte, 0, len(json)*2)
+	for i := 0; i < len(json); {
+		buf = buf[0:0]
+		buf, i, _, _ = appendPrettyAny(buf, json, i, makePrettyOption(true,
+			opts.Width, opts.Prefix, opts.Indent, opts.SortKeys,
+			0, 0, -1))
+		if len(buf) > 0 {
+			buf = append(buf, '\n')
+		} else {
+			break
+		}
+		totalBuf = append(totalBuf, buf...)
 	}
-	return buf
+	return totalBuf
 }
 
 // Ugly removes insignificant space characters from the input json byte slice
