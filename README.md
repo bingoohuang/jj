@@ -735,7 +735,7 @@ Install `go get github.com/bingoohuang/jj/...`
 ```
 $ jj -h
 
-usage: jj [-v value] [-purOD] [-i infile] [-o outfile] keypath
+usage: jj [-v value] [-urOD] [-i infile] [-o outfile] keypath
 
 examples: jj keypath                      read value from stdin
       or: jj -i infile keypath            read value from infile
@@ -744,7 +744,6 @@ examples: jj keypath                      read value from stdin
 
 options:
       -v value             Edit JSON key path value
-      -p                   Make json pretty, keypath is optional
       -u                   Make json ugly, keypath is optional
       -r                   Use raw values, otherwise types are auto-detected
       -n                   Do not output color or extra formatting
@@ -813,13 +812,13 @@ For example:
 ```
 
 ```sh
-[ 00:07:20 ] ❯ jj -i testdata/line.json  ..#
+$ jj -i testdata/line.json  ..#
 3
-[ 00:08:22 ] ❯ jj -i testdata/line.json  ..1   
+$ jj -i testdata/line.json  ..1   
 {"name": "Alexa", "age": 34}
-[ 00:08:36 ] ❯ jj -i testdata/line.json  ..#.name   
+$ jj -i testdata/line.json  ..#.name   
 ["Gilbert","Alexa","May"]
-[ 00:09:00 ] ❯ jj -i testdata/line.json  "..#[name="May"].age"
+$ jj -i testdata/line.json  "..#[name="May"].age"
 57
 ```
 
@@ -928,20 +927,18 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 
 #### Pretty printing
 
-The `-p` flag will make the output json pretty.
-
 ```sh
-$ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj -p name
+$ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name
 {
   "first": "Tom",
   "last": "Smith"
 }
 ```
 
-Also the keypath is optional when the `-p` flag is specified, allowing for the entire json document to be made pretty.
+Also the keypath is optional, allowing for the entire json document to be made pretty.
 
 ```sh
-$ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj -p
+$ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj
 {
   "name": {
     "first": "Tom",
@@ -964,12 +961,12 @@ The test [json file](https://github.com/tidwall/sf-city-lots-json) is 180MB file
 #### Get a lot of number for the parcel at index 10000
 
 ```sh
-[ 00:26:20 ] ❯ time cat citylots.json | jq -cM ".features[10000].properties.LOT_NUM"
+$ time cat citylots.json | jq -cM ".features[10000].properties.LOT_NUM"
 "091"
 cat citylots.json  0.01s user 0.11s system 2% cpu 5.010 total
 jq -cM ".features[10000].properties.LOT_NUM"  5.46s user 0.66s system 99% cpu 6.151 total
 
-[ 00:26:57 ] ❯ time cat citylots.json | jj -r features.10000.properties.LOT_NUM
+$ time cat citylots.json | jj -r features.10000.properties.LOT_NUM
 "091"
 cat citylots.json  0.01s user 0.10s system 24% cpu 0.449 total
 jj -r features.10000.properties.LOT_NUM  0.24s user 0.28s system 107% cpu 0.494 total
@@ -978,11 +975,11 @@ jj -r features.10000.properties.LOT_NUM  0.24s user 0.28s system 107% cpu 0.494 
 #### Update the lot number for the parcel at index 10000
 
 ```sh
-[ 00:27:02 ] ❯ time cat citylots.json | jq -cM '.features[10000].properties.LOT_NUM="12A"' > /dev/null
+$ time cat citylots.json | jq -cM '.features[10000].properties.LOT_NUM="12A"' > /dev/null
 cat citylots.json  0.01s user 0.08s system 1% cpu 5.452 total
 jq -cM '.features[10000].properties.LOT_NUM="12A"' > /dev/null  13.94s user 0.74s system 99% cpu 14.772 total
 
-[ 00:28:23 ] ❯ time cat citylots.json | jj -O -v 12A features.10000.properties.LOT_NUM > /dev/null
+$ time cat citylots.json | jj -O -v 12A features.10000.properties.LOT_NUM > /dev/null
 cat citylots.json  0.01s user 0.08s system 23% cpu 0.368 total
 jj -O -v 12A features.10000.properties.LOT_NUM > /dev/null  0.22s user 0.27s system 121% cpu 0.406 total
 ```

@@ -12,19 +12,16 @@ import (
 )
 
 var (
-	version = "1.0.0"
+	version = "1.0.1"
 	tag     = "jj - JSON Stream Editor " + version
 	usage   = `
 usage: jj [-v value] [-purnOD] [-i infile] [-o outfile] keypath
-
 examples: jj keypath                      read value from stdin
       or: jj -i infile keypath            read value from infile
       or: jj -v value keypath             edit value
       or: jj -v value -o outfile keypath  edit value and write to outfile
-
 options:
       -v value             Edit JSON key path value
-      -p                   Make json pretty, keypath is optional
       -u                   Make json ugly, keypath is optional
       -r                   Use raw values, otherwise types are auto-detected
       -n                   Do not output color or extra formatting
@@ -34,7 +31,6 @@ options:
       -i infile            Use input file instead of stdin
       -o outfile           Use output file instead of stdout
       keypath              JSON key path (like "name.last")
-
 for more info: https://github.com/bingoohuang/jj
 `
 )
@@ -48,7 +44,6 @@ type args struct {
 	opt       bool
 	keypathok bool
 	keypath   string
-	pretty    bool
 	ugly      bool
 	notty     bool
 	lines     bool
@@ -81,8 +76,6 @@ func parseArgs() args {
 						fail("unknown option argument: \"-%c\"", os.Args[i][j])
 					case '-':
 						fail("unknown option argument: \"%s\"", os.Args[i])
-					case 'p':
-						a.pretty = true
 					case 'u':
 						a.ugly = true
 					case 'r':
@@ -128,9 +121,7 @@ func parseArgs() args {
 			help()
 		}
 	}
-	if !a.keypathok && !a.pretty && !a.ugly {
-		fail("missing required option: \"keypath\"")
-	}
+
 	return a
 }
 
@@ -222,10 +213,10 @@ func main() {
 		})
 		outb = outb2
 	} else if a.raw || outt != jj.String {
-		if a.pretty {
-			outb = jj.Pretty(outb)
-		} else if a.ugly {
+		if a.ugly {
 			outb = jj.Ugly(outb)
+		} else {
+			outb = jj.Pretty(outb)
 		}
 	}
 	if !a.notty && isatty.IsTerminal(f.Fd()) {
