@@ -35,9 +35,10 @@ func Pretty(json []byte, options ...Options) []byte {
 	if len(opts.Prefix) > 0 {
 		buf = append(buf, opts.Prefix...)
 	}
-	buf, _, _, _ = appendPrettyAny(buf, json, 0, true,
+
+	buf, _, _, _ = appendPrettyAny(buf, json, 0, makePrettyOption(true,
 		opts.Width, opts.Prefix, opts.Indent, opts.SortKeys,
-		0, 0, -1)
+		0, 0, -1))
 	if len(buf) > 0 {
 		buf = append(buf, '\n')
 	}
@@ -89,33 +90,45 @@ func ugly(dst, src []byte) []byte {
 	return dst
 }
 
-func appendPrettyAny(buf, json []byte, i int, pretty bool, width int, prefix, indent string, sortkeys bool, tabs, nl, max int) ([]byte, int, int, bool) {
+type prettyOption struct {
+	pretty         bool
+	width          int
+	prefix, indent string
+	sortkeys       bool
+	tabs, nl, max  int
+}
+
+func makePrettyOption(pretty bool, width int, prefix, indent string, sortkeys bool, tabs, nl, max int) prettyOption {
+	return prettyOption{pretty: pretty, width: width, prefix: prefix, indent: indent, sortkeys: sortkeys, tabs: tabs, nl: nl, max: max}
+}
+
+func appendPrettyAny(buf, json []byte, i int, p prettyOption) ([]byte, int, int, bool) {
 	for ; i < len(json); i++ {
 		c := json[i]
 		if c <= ' ' {
 			continue
 		}
 		if c == '"' {
-			return appendPrettyString(buf, json, i, nl)
+			return appendPrettyString(buf, json, i, p.nl)
 		}
 		if (c >= '0' && c <= '9') || c == '-' {
-			return appendPrettyNumber(buf, json, i, nl)
+			return appendPrettyNumber(buf, json, i, p.nl)
 		}
 
 		switch c {
 		case '{':
-			return appendPrettyObject(buf, json, i, '{', '}', pretty, width, prefix, indent, sortkeys, tabs, nl, max)
+			return appendPrettyObject(buf, json, i, '{', '}', p)
 		case '[':
-			return appendPrettyObject(buf, json, i, '[', ']', pretty, width, prefix, indent, sortkeys, tabs, nl, max)
+			return appendPrettyObject(buf, json, i, '[', ']', p)
 		case 't':
-			return append(buf, 't', 'r', 'u', 'e'), i + 4, nl, true
+			return append(buf, 't', 'r', 'u', 'e'), i + 4, p.nl, true
 		case 'f':
-			return append(buf, 'f', 'a', 'l', 's', 'e'), i + 5, nl, true
+			return append(buf, 'f', 'a', 'l', 's', 'e'), i + 5, p.nl, true
 		case 'n':
-			return append(buf, 'n', 'u', 'l', 'l'), i + 4, nl, true
+			return append(buf, 'n', 'u', 'l', 'l'), i + 4, p.nl, true
 		}
 	}
-	return buf, i, nl, true
+	return buf, i, p.nl, true
 }
 
 type pair struct {
@@ -144,29 +157,30 @@ func (arr *byKey) Swap(i, j int) {
 	arr.sorted = true
 }
 
-func appendPrettyObject(buf, json []byte, i int, open, close byte, pretty bool, width int, prefix, indent string, sortkeys bool, tabs, nl, max int) ([]byte, int, int, bool) {
+func appendPrettyObject(buf, json []byte, i int, open, close byte, po prettyOption) ([]byte, int, int, bool) {
 	var ok bool
-	if width > 0 {
-		if pretty && open == '[' && max == -1 {
+	if po.width > 0 {
+		if po.pretty && open == '[' && po.max == -1 {
 			// here we try to create a single line array
-			max := width - (len(buf) - nl)
+			max := po.width - (len(buf) - po.nl)
 			if max > 3 {
 				s1, s2 := len(buf), i
-				buf, i, _, ok = appendPrettyObject(buf, json, i, '[', ']', false, width, prefix, "", sortkeys, 0, 0, max)
+				buf, i, _, ok = appendPrettyObject(buf, json, i, '[', ']',
+					makePrettyOption(false, po.width, po.prefix, "", po.sortkeys, 0, 0, max))
 				if ok && len(buf)-s1 <= max {
-					return buf, i, nl, true
+					return buf, i, po.nl, true
 				}
 				buf = buf[:s1]
 				i = s2
 			}
-		} else if max != -1 && open == '{' {
-			return buf, i, nl, false
+		} else if po.max != -1 && open == '{' {
+			return buf, i, po.nl, false
 		}
 	}
 	buf = append(buf, open)
 	i++
 	var pairs []pair
-	if open == '{' && sortkeys {
+	if open == '{' && po.sortkeys {
 		pairs = make([]pair, 0, 8)
 	}
 	var n int
@@ -175,57 +189,58 @@ func appendPrettyObject(buf, json []byte, i int, open, close byte, pretty bool, 
 			continue
 		}
 		if json[i] == close {
-			if pretty {
-				if open == '{' && sortkeys {
+			if po.pretty {
+				if open == '{' && po.sortkeys {
 					buf = sortPairs(json, buf, pairs)
 				}
 				if n > 0 {
-					nl = len(buf)
+					po.nl = len(buf)
 					buf = append(buf, '\n')
 				}
 				if buf[len(buf)-1] != open {
-					buf = appendTabs(buf, prefix, indent, tabs)
+					buf = appendTabs(buf, po.prefix, po.indent, po.tabs)
 				}
 			}
 			buf = append(buf, close)
-			return buf, i + 1, nl, open != '{'
+			return buf, i + 1, po.nl, open != '{'
 		}
 		if open == '[' || json[i] == '"' {
 			if n > 0 {
 				buf = append(buf, ',')
-				if width != -1 && open == '[' {
+				if po.width != -1 && open == '[' {
 					buf = append(buf, ' ')
 				}
 			}
 			var p pair
-			if pretty {
-				nl = len(buf)
+			if po.pretty {
+				po.nl = len(buf)
 				buf = append(buf, '\n')
-				if open == '{' && sortkeys {
+				if open == '{' && po.sortkeys {
 					p.kstart = i
 					p.vstart = len(buf)
 				}
-				buf = appendTabs(buf, prefix, indent, tabs+1)
+				buf = appendTabs(buf, po.prefix, po.indent, po.tabs+1)
 			}
 			if open == '{' {
-				buf, i, nl, _ = appendPrettyString(buf, json, i, nl)
-				if sortkeys {
+				buf, i, po.nl, _ = appendPrettyString(buf, json, i, po.nl)
+				if po.sortkeys {
 					p.kend = i
 				}
 				buf = append(buf, ':')
-				if pretty {
+				if po.pretty {
 					buf = append(buf, ' ')
 				}
 			}
-			buf, i, nl, ok = appendPrettyAny(buf, json, i, pretty, width, prefix, indent, sortkeys, tabs+1, nl, max)
-			if max != -1 && !ok {
-				return buf, i, nl, false
+			buf, i, po.nl, ok = appendPrettyAny(buf, json, i,
+				makePrettyOption(po.pretty, po.width, po.prefix, po.indent, po.sortkeys, po.tabs+1, po.nl, po.max))
+			if po.max != -1 && !ok {
+				return buf, i, po.nl, false
 			}
-			if pretty && open == '{' && sortkeys {
+			if po.pretty && open == '{' && po.sortkeys {
 				p.vend = len(buf)
 				if p.kstart > p.kend || p.vstart > p.vend {
 					// bad data. disable sorting
-					sortkeys = false
+					po.sortkeys = false
 				} else {
 					pairs = append(pairs, p)
 				}
@@ -234,7 +249,8 @@ func appendPrettyObject(buf, json []byte, i int, open, close byte, pretty bool, 
 			n++
 		}
 	}
-	return buf, i, nl, open != '{'
+
+	return buf, i, po.nl, open != '{'
 }
 
 func sortPairs(json, buf []byte, pairs []pair) []byte {
