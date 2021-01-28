@@ -302,29 +302,29 @@ type arrayOrMapResult struct {
 }
 
 func (t Result) arrayOrMap(vc byte, valueize bool) (r arrayOrMapResult) {
-	json := t.Raw
+	jso := t.Raw
 	var i int
 	var value Result
 	var count int
 	var key Result
 	if vc == 0 {
-		for ; i < len(json); i++ {
-			if json[i] == '{' || json[i] == '[' {
-				r.vc = json[i]
+		for ; i < len(jso); i++ {
+			if jso[i] == '{' || jso[i] == '[' {
+				r.vc = jso[i]
 				i++
 				break
 			}
-			if json[i] > ' ' {
+			if jso[i] > ' ' {
 				goto end
 			}
 		}
 	} else {
-		for ; i < len(json); i++ {
-			if json[i] == vc {
+		for ; i < len(jso); i++ {
+			if jso[i] == vc {
 				i++
 				break
 			}
-			if json[i] > ' ' {
+			if jso[i] > ' ' {
 				goto end
 			}
 		}
@@ -343,42 +343,42 @@ func (t Result) arrayOrMap(vc byte, valueize bool) (r arrayOrMapResult) {
 			r.a = make([]Result, 0)
 		}
 	}
-	for ; i < len(json); i++ {
-		if json[i] <= ' ' {
+	for ; i < len(jso); i++ {
+		if jso[i] <= ' ' {
 			continue
 		}
 		// get next value
-		if json[i] == ']' || json[i] == '}' {
+		if jso[i] == ']' || jso[i] == '}' {
 			break
 		}
-		switch json[i] {
+		switch jso[i] {
 		default:
-			if (json[i] >= '0' && json[i] <= '9') || json[i] == '-' {
+			if (jso[i] >= '0' && jso[i] <= '9') || jso[i] == '-' {
 				value.Type = Number
-				value.Raw, value.Num = tonum(json[i:])
+				value.Raw, value.Num = tonum(jso[i:])
 				value.Str = ""
 			} else {
 				continue
 			}
 		case '{', '[':
 			value.Type = JSON
-			value.Raw = squash(json[i:])
+			value.Raw = squash(jso[i:])
 			value.Str, value.Num = "", 0
 		case 'n':
 			value.Type = Null
-			value.Raw = tolit(json[i:])
+			value.Raw = tolit(jso[i:])
 			value.Str, value.Num = "", 0
 		case 't':
 			value.Type = True
-			value.Raw = tolit(json[i:])
+			value.Raw = tolit(jso[i:])
 			value.Str, value.Num = "", 0
 		case 'f':
 			value.Type = False
-			value.Raw = tolit(json[i:])
+			value.Raw = tolit(jso[i:])
 			value.Str, value.Num = "", 0
 		case '"':
 			value.Type = String
-			value.Raw, value.Str = tostr(json[i:])
+			value.Raw, value.Str = tostr(jso[i:])
 			value.Num = 0
 		}
 		i += len(value.Raw) - 1
@@ -598,7 +598,7 @@ func tostr(json string) (raw string, str string) {
 
 // Exists returns true if value exists.
 //
-//  if gjson.Get(json, "name.last").Exists(){
+//  if jj.Get(json, "name.last").Exists(){
 //		println("value exists")
 //  }
 func (t Result) Exists() bool {
@@ -1418,7 +1418,7 @@ LOOP:
 			pmatch = partidx == h
 			hit = pmatch && !rp.more
 		}
-		if partidxOk && partidx < 0 && !option.InSetContext {
+		if partidxOk && partidx < 0 && !option.DisableNegativeIndex {
 			harray = append(harray, i)
 		}
 		h++
@@ -1618,7 +1618,7 @@ LOOP:
 					return i + 1, true
 				}
 
-				if partidxOk && partidx < 0 && !option.InSetContext && -partidx < h {
+				if partidxOk && partidx < 0 && !option.DisableNegativeIndex && -partidx < h {
 					// processing negative index like -1,-2
 					partidx = h + partidx - 1
 					i = harray[partidx]
@@ -1860,17 +1860,17 @@ type parseContext struct {
 type PathOption struct {
 	// RawPath will treat the path as a single json key other than syntaxed json path.
 	RawPath bool
-	// InSetContext tells that context is in Set or not, if true, -1 will not support.
-	InSetContext bool
+	// DisableNegativeIndex disables the negative index support in jj.Get.
+	DisableNegativeIndex bool
 }
 
 // PathOptionFn is the proto type of function option.
 type PathOptionFn func(*PathOption)
 
-// WithInSetContext set the options InSetContext to true.
-func WithInSetContext(v bool) PathOptionFn {
+// DisableNegativeIndex disables the negative index support in jj.Get.
+func DisableNegativeIndex(v bool) PathOptionFn {
 	return func(o *PathOption) {
-		o.InSetContext = v
+		o.DisableNegativeIndex = v
 	}
 }
 
@@ -2533,10 +2533,10 @@ func validnull(data []byte, i int) (outi int, ok bool) {
 
 // Valid returns true if the input is valid json.
 //
-//  if !gjson.Valid(json) {
+//  if !jj.Valid(json) {
 //  	return errors.New("invalid json")
 //  }
-//  value := gjson.Get(json, "name.last")
+//  value := jj.Get(json, "name.last")
 //
 func Valid(json string) bool {
 	_, ok := validpayload(stringBytes(json), 0)
@@ -2545,10 +2545,10 @@ func Valid(json string) bool {
 
 // ValidBytes returns true if the input is valid json.
 //
-//  if !gjson.Valid(json) {
+//  if !jj.Valid(json) {
 //  	return errors.New("invalid json")
 //  }
-//  value := gjson.Get(json, "name.last")
+//  value := jj.Get(json, "name.last")
 //
 // If working with bytes, this method preferred over ValidBytes(string(data))
 //

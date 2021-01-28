@@ -245,7 +245,7 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, sc 
 		}
 	}
 	if !found {
-		res = Get(jstr, paths[0].gpart, ApplyGetOption(sc.PathOption), WithInSetContext(true))
+		res = Get(jstr, paths[0].gpart, ApplyGetOption(sc.PathOption), DisableNegativeIndex(true))
 	}
 	if res.Index > 0 {
 		if len(paths) > 1 {
@@ -447,7 +447,7 @@ func set(jstr, path, raw string, sc setConfig) ([]byte, error) {
 		return nil, &errorType{"path cannot be empty"}
 	}
 	if !sc.del && sc.optimistic && isOptimisticPath(path, sc) {
-		res := Get(jstr, path, ApplyGetOption(sc.PathOption), WithInSetContext(true))
+		res := Get(jstr, path, ApplyGetOption(sc.PathOption), DisableNegativeIndex(true))
 		if res.Exists() && res.Index > 0 {
 			sz := len(jstr) - len(res.Raw) + len(raw)
 			if sc.stringify {

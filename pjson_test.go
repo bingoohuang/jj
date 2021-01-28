@@ -542,7 +542,7 @@ func testSpeed(path string) {
 	}
 	fmt.Printf("== %s == (%d bytes)\n", baseName, len(jdata))
 	N := 200000000 / len(jdata) / 10 * 10
-	lotsaOps("pjson.Parse (noop iter)", N, func() int {
+	lotsaOps("jj.Parse (noop iter)", N, func() int {
 		if jj.StreamParse(jdata, func(start, end, info int) int {
 			return 1
 		}) < 0 {
@@ -550,7 +550,7 @@ func testSpeed(path string) {
 		}
 		return len(jdata)
 	})
-	lotsaOps("pjson.Parse (nil iter)", N, func() int {
+	lotsaOps("jj.Parse (nil iter)", N, func() int {
 		if jj.StreamParse(jdata, nil) < 0 {
 			panic("invalid")
 		}

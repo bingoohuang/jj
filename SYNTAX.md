@@ -79,8 +79,8 @@ fav\.movie             "Deer Hunter"
 You'll also need to make sure that the `\` character is correctly escaped when hardcoding a path in source code.
 
 ```go
-res := gjson.Get(json, "fav\\.movie")  // must escape the slash
-res := gjson.Get(json, `fav\.movie`)   // no need to escape the slash
+res := jj.Get(json, "fav\\.movie")  // must escape the slash
+res := jj.Get(json, `fav\.movie`)   // no need to escape the slash
 
 ```
 
@@ -234,7 +234,7 @@ You can also add custom modifiers.
 For example, here we create a modifier which makes the entire JSON payload upper or lower case.
 
 ```go
-gjson.AddModifier("case", func(json, arg string) string {
+jj.AddModifier("case", func(json, arg string) string {
   if arg == "upper" {
     return strings.ToUpper(json)
   }
