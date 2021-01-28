@@ -1347,13 +1347,14 @@ func parseArray(c *parseContext, i int, path string, option *PathOption) (int, b
 	var h int
 	var alog []int
 	var partidx int
+	var partidxOk bool
 	var multires []byte
 	rp := parseArrayPath(path)
 	if !rp.arrch {
-		n, ok := parseUint(rp.part)
-		if !ok {
+		if n, ok := parseInt(rp.part); !ok {
 			partidx = -1
 		} else {
+			partidxOk = true
 			partidx = int(n)
 		}
 	}
@@ -1408,10 +1409,17 @@ func parseArray(c *parseContext, i int, path string, option *PathOption) (int, b
 		return false
 	}
 
+	// save positions if partidx is negative
+	var harray []int
+
+LOOP:
 	for i < len(c.json)+1 {
 		if !rp.arrch {
 			pmatch = partidx == h
 			hit = pmatch && !rp.more
+		}
+		if partidxOk && partidx < 0 && !option.InSetContext {
+			harray = append(harray, i)
 		}
 		h++
 		if rp.alogok {
@@ -1609,6 +1617,15 @@ func parseArray(c *parseContext, i int, path string, option *PathOption) (int, b
 					c.calcd = true
 					return i + 1, true
 				}
+
+				if partidxOk && partidx < 0 && !option.InSetContext && -partidx < h {
+					// processing negative index like -1,-2
+					partidx = h + partidx - 1
+					i = harray[partidx]
+					h = partidx
+					goto LOOP
+				}
+
 				if len(multires) > 0 && !c.value.Exists() {
 					c.value = Result{
 						Raw:  string(append(multires, ']')),
@@ -1843,19 +1860,28 @@ type parseContext struct {
 type PathOption struct {
 	// RawPath will treat the path as a single json key other than syntaxed json path.
 	RawPath bool
+	// InSetContext tells that context is in Set or not, if true, -1 will not support.
+	InSetContext bool
 }
 
 // PathOptionFn is the proto type of function option.
 type PathOptionFn func(*PathOption)
 
-// WithRawPath set the options WithRawPath to true.
+// WithInSetContext set the options InSetContext to true.
+func WithInSetContext(v bool) PathOptionFn {
+	return func(o *PathOption) {
+		o.InSetContext = v
+	}
+}
+
+// WithRawPath set the options RawPath to true.
 func WithRawPath(v bool) PathOptionFn {
 	return func(o *PathOption) {
 		o.RawPath = v
 	}
 }
 
-// ApplyGetOption set the options WithRawPath to true.
+// ApplyGetOption set the options RawPath.
 func ApplyGetOption(v PathOption) PathOptionFn {
 	return func(o *PathOption) {
 		*o = v

@@ -1403,6 +1403,19 @@ func TestNumUint64String(t *testing.T) {
 	}
 }
 
+func TestSliceNegative(t *testing.T) {
+	j := `{"data":[ "hello", "world" ]}`
+	res := Get(j, "data.-1")
+	if res.String() != "world" {
+		t.Fatalf("expected '%v', got '%v'", "world", res.String())
+	}
+
+	res = Get(j, "data.-2")
+	if res.String() != "hello" {
+		t.Fatalf("expected '%v', got '%v'", "hello", res.String())
+	}
+}
+
 func TestNumInt64String(t *testing.T) {
 	var i int64 = -9007199254740993
 	j := fmt.Sprintf(`{"data":[ "hello", %d ]}`, i)

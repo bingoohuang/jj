@@ -2,10 +2,11 @@ package jj_test
 
 import (
 	"fmt"
-	"github.com/bingoohuang/jj"
 	"os"
 	"sync/atomic"
 	"testing"
+
+	"github.com/bingoohuang/jj"
 )
 
 func ExampleOps() {
@@ -36,8 +37,8 @@ func ExampleOps() {
 }
 
 func TestOps(t *testing.T) {
-	var threads = 4
-	var N = threads * 10000
+	threads := 4
+	N := threads * 10000
 	var total int64
 	jj.Ops(N, threads, func(i, thread int) {
 		atomic.AddInt64(&total, 1)

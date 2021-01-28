@@ -785,9 +785,13 @@ $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj -r name.last
 "Smith"
 ```
 
-Get an array value by index:
+Get an array value by an index:
 ```sh
 $ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.1
+Jane
+$ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.-1
+Carol
+$ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.-2
 Jane
 ```
 

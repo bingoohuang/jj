@@ -143,14 +143,8 @@ func TestSjsonBasic(t *testing.T) {
 		`{"app.token":"cde"}`,
 		`{"app.token":"abc"}`,
 		"app\\.token", `"cde"`)
-	testRaw(t, setRaw,
-		`{"b":{"this":{"😇":""}}}`,
-		``,
-		"b.this.😇", `""`)
-	testRaw(t, setRaw,
-		`[ 1,2  ,3]`,
-		`  [ 1,2  ] `,
-		"-1", `3`)
+	testRaw(t, setRaw, `{"b":{"this":{"😇":""}}}`, ``, "b.this.😇", `""`)
+	testRaw(t, setRaw, `[ 1,2  ,3]`, `  [ 1,2  ] `, "-1", `3`)
 	testRaw(t, setInt, `[1234]`, ``, `0`, int64(1234))
 	testRaw(t, setFloat, `[1234.5]`, ``, `0`, 1234.5)
 	testRaw(t, setString, `["1234.5"]`, ``, `0`, "1234.5")

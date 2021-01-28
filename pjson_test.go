@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bingoohuang/jj"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/bingoohuang/jj"
 )
 
 func ExampleStreamParse() {
@@ -359,7 +360,6 @@ func TestIter(t *testing.T) {
 		panic("!")
 	}
 	// mustEqual(string(out), "true")
-
 }
 
 func testreturnvalue(t *testing.T, json string, expect int) {
