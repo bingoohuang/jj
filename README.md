@@ -689,18 +689,18 @@ There's a `PrettyOptions(json, opts)` function which allows for customizing the 
 
 ```go
 type Options struct {
-// Width is an max column width for single line arrays
-// Default 80
-Width int
-// Prefix is a prefix for all lines
-// Default empty
-Prefix string
-// Indent is the nested indentation
-// Default two spaces
-Indent string
-// SortKeys will sort the keys alphabetically
-// Default false
-SortKeys bool
+	// Width is an max column width for single line arrays
+	// Default 80
+	Width int
+	// Prefix is a prefix for all lines
+	// Default empty
+	Prefix string
+	// Indent is the nested indentation
+	// Default two spaces
+	Indent string
+	// SortKeys will sort the keys alphabetically
+	// Default false
+	SortKeys bool
 }
 ```
 
@@ -793,6 +793,13 @@ $ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.-1
 Carol
 $ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.-2
 Jane
+```
+
+Raw key(treat key as a single raw key without any other key path meaning)
+
+```
+$ echo '{"friends.-1":["Andy","Carol"]}' | jj -K friends.-1
+["Andy", "Carol"]
 ```
 
 #### JSON Lines
@@ -974,7 +981,7 @@ The test [json file](https://github.com/tidwall/sf-city-lots-json) is 180MB file
 
 *Tested on a 2018 Macbook Pro running jq 1.6 and jj 1.0.0*
 
-#### Get a lot of number for the parcel at index 10000
+Get a lot of number for the parcel at index 10000
 
 ```sh
 $ time cat citylots.json | jq -cM ".features[10000].properties.LOT_NUM"
@@ -988,7 +995,7 @@ cat citylots.json  0.01s user 0.10s system 24% cpu 0.449 total
 jj -r features.10000.properties.LOT_NUM  0.24s user 0.28s system 107% cpu 0.494 total
 ```
 
-#### Update the lot number for the parcel at index 10000
+Update a lot of number for the parcel at index 10000
 
 ```sh
 $ time cat citylots.json | jq -cM '.features[10000].properties.LOT_NUM="12A"' > /dev/null

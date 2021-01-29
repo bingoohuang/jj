@@ -1409,8 +1409,7 @@ func parseArray(c *parseContext, i int, path string, option *PathOption) (int, b
 		return false
 	}
 
-	// save positions if partidx is negative
-	var harray []int
+	isNegativePartIdx := partidxOk && !option.DisableNegativeIndex
 
 LOOP:
 	for i < len(c.json)+1 {
@@ -1418,11 +1417,9 @@ LOOP:
 			pmatch = partidx == h
 			hit = pmatch && !rp.more
 		}
-		if partidxOk && partidx < 0 && !option.DisableNegativeIndex {
-			harray = append(harray, i)
-		}
+
 		h++
-		if rp.alogok {
+		if rp.alogok || isNegativePartIdx && partidx < 0 {
 			alog = append(alog, i)
 		}
 		for ; ; i++ {
@@ -1618,10 +1615,10 @@ LOOP:
 					return i + 1, true
 				}
 
-				if partidxOk && partidx < 0 && !option.DisableNegativeIndex && -partidx < h {
+				if isNegativePartIdx && partidx < 0 && -partidx < h {
 					// processing negative index like -1,-2
 					partidx = h + partidx - 1
-					i = harray[partidx]
+					i = alog[partidx]
 					h = partidx
 					goto LOOP
 				}
@@ -2042,8 +2039,8 @@ func Get(json, path string, optionsFns ...PathOptionFn) Result {
 
 // GetBytes searches json for the specified path.
 // If working with bytes, this method preferred over Get(string(data), path)
-func GetBytes(json []byte, path string) Result {
-	return getBytes(json, path)
+func GetBytes(json []byte, path string, optionsFns ...PathOptionFn) Result {
+	return getBytes(json, path, optionsFns...)
 }
 
 // runeit returns the rune from the the \uXXXX
@@ -2905,11 +2902,11 @@ func modValid(json, arg string) string {
 // getBytes casts the input json bytes to a string and safely returns the
 // results as uniquely allocated data. This operation is intended to minimize
 // copies and allocations for the large json string->[]byte.
-func getBytes(json []byte, path string) Result {
+func getBytes(json []byte, path string, optionsFns ...PathOptionFn) Result {
 	var result Result
 	if json != nil {
 		// unsafe cast to string
-		result = Get(*(*string)(unsafe.Pointer(&json)), path)
+		result = Get(*(*string)(unsafe.Pointer(&json)), path, optionsFns...)
 		// safely get the string headers
 		rawhi := *(*reflect.StringHeader)(unsafe.Pointer(&result.Raw))
 		strhi := *(*reflect.StringHeader)(unsafe.Pointer(&result.Str))

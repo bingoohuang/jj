@@ -30,7 +30,9 @@ options:
       -l                   Output array values on multiple lines
       -i infile            Use input file instead of stdin
       -o outfile           Use output file instead of stdout
-      keypath              JSON key path (like "name.last")
+      -k keypath           JSON key path (like "name.last")
+      -K keypath           JSON key path as raw whole key
+      keypath              last argument for JSON key path
 for more info: https://github.com/bingoohuang/jj
 `
 )
@@ -47,6 +49,7 @@ type args struct {
 	ugly      bool
 	notty     bool
 	lines     bool
+	rawKey    bool
 }
 
 func parseArgs() args {
@@ -98,7 +101,7 @@ func parseArgs() args {
 			} else {
 				fail("unknown option argument: \"%s\"", a.keypath)
 			}
-		case "-v", "-i", "-o":
+		case "-v", "-i", "-o", "-k", "-K":
 			arg := os.Args[i]
 			i++
 			if i >= len(os.Args) {
@@ -111,6 +114,10 @@ func parseArgs() args {
 				a.infile = &os.Args[i]
 			case "-o":
 				a.outfile = &os.Args[i]
+			case "-k", "-K":
+				a.keypathok = true
+				a.keypath = os.Args[i]
+				a.rawKey = arg == "-K"
 			}
 		case "--force-notty":
 			a.notty = true
@@ -127,6 +134,7 @@ func parseArgs() args {
 
 func main() {
 	a := parseArgs()
+	opts := jj.SetOptions{PathOption: jj.PathOption{RawPath: a.rawKey}}
 	var input []byte
 	var err error
 	var outb []byte
@@ -143,7 +151,7 @@ func main() {
 		goto fail
 	}
 	if a.del {
-		outb, err = jj.DeleteBytes(input, a.keypath)
+		outb, err = jj.DeleteBytes(input, a.keypath, opts)
 		if err != nil {
 			goto fail
 		}
@@ -164,7 +172,7 @@ func main() {
 				raw = true
 			}
 		}
-		opts := jj.SetOptions{}
+
 		if a.opt {
 			opts.Optimistic = true
 			opts.ReplaceInPlace = true
@@ -183,7 +191,7 @@ func main() {
 		if !a.keypathok {
 			outb = input
 		} else {
-			res := jj.GetBytes(input, a.keypath)
+			res := jj.GetBytes(input, a.keypath, jj.WithRawPath(a.rawKey))
 			if a.raw {
 				outs = res.Raw
 			} else {

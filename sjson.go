@@ -236,13 +236,12 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, sc 
 	var res Result
 	var found bool
 	if sc.del {
-		if !sc.RawPath && paths[0].part == "-1" && !paths[0].force {
-			res = Get(jstr, "#")
-			if res.Int() > 0 {
-				res = Get(jstr, strconv.FormatInt(res.Int()-1, 10))
-				found = true
-			}
+		if sc.RawPath {
+			res = Get(jstr, paths[0].gpart, ApplyGetOption(sc.PathOption))
+		} else if paths[0].part == "-1" && !paths[0].force {
+			res = Get(jstr, "-1")
 		}
+		found = res.Exists()
 	}
 	if !found {
 		res = Get(jstr, paths[0].gpart, ApplyGetOption(sc.PathOption), DisableNegativeIndex(true))
