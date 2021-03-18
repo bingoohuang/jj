@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	_ "embed"
 	"github.com/bingoohuang/jj"
 	isatty "github.com/mattn/go-isatty"
 )
@@ -14,27 +15,25 @@ import (
 var (
 	version = "1.0.1"
 	tag     = "jj - JSON Stream Editor " + version
-	usage   = `
-usage: jj [-v value] [-purnOD] [-i infile] [-o outfile] keypath
-examples: jj keypath                      read value from stdin
-      or: jj -i infile keypath            read value from infile
-      or: jj -v value keypath             edit value
-      or: jj -v value -o outfile keypath  edit value and write to outfile
+	usage   = `usage: jj [-v value] [-curnOD] [-i infile] [-o outfile] keypath
+eg.: jj keypath                      read value from stdin
+     jj -i infile keypath            read value from infile
+     jj -v value keypath             edit value
+     jj -v value -o outfile keypath  edit value and write to outfile
 options:
-      -v value             Edit JSON key path value
-      -u                   Make json ugly, keypath is optional
-      -r                   Use raw values, otherwise types are auto-detected
-      -n                   Do not output color or extra formatting
-      -O                   Performance boost for value updates
-      -D                   Delete the value at the specified key path
-      -l                   Output array values on multiple lines
-      -i infile            Use input file instead of stdin
-      -o outfile           Use output file instead of stdout
-      -k keypath           JSON key path (like "name.last")
-      -K keypath           JSON key path as raw whole key
-      keypath              last argument for JSON key path
-for more info: https://github.com/bingoohuang/jj
-`
+     -v value   Edit JSON key path value
+     -c         Print cheatsheet
+     -u         Make json ugly, keypath is optional
+     -r         Use raw values, otherwise types are auto-detected
+     -n         Do not output color or extra formatting
+     -O         Performance boost for value updates
+     -D         Delete the value at the specified key path
+     -l         Output array values on multiple lines
+     -i infile  Use input file instead of stdin
+     -o outfile Use output file instead of stdout
+     -k keypath JSON key path (like "name.last")
+     -K keypath JSON key path as raw whole key
+      keypath   Last argument for JSON key path`
 )
 
 type args struct {
@@ -68,6 +67,7 @@ func parseArgs() args {
 		os.Stdout.Write(buf.Bytes())
 		os.Exit(0)
 	}
+
 	var a args
 	for i := 1; i < len(os.Args); i++ {
 		switch os.Args[i] {
@@ -79,6 +79,8 @@ func parseArgs() args {
 						fail("unknown option argument: \"-%c\"", os.Args[i][j])
 					case '-':
 						fail("unknown option argument: \"%s\"", os.Args[i])
+					case 'c':
+						printCheatsAndExit()
 					case 'u':
 						a.ugly = true
 					case 'r':
@@ -130,6 +132,14 @@ func parseArgs() args {
 	}
 
 	return a
+}
+
+//go:embed cheat.txt
+var cheatText string
+
+func printCheatsAndExit() {
+	fmt.Println(cheatText)
+	os.Exit(0)
 }
 
 func main() {
