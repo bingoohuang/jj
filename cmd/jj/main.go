@@ -2,14 +2,15 @@ package main
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"strconv"
-
 	_ "embed"
+	"fmt"
 	"github.com/bingoohuang/jj"
 	isatty "github.com/mattn/go-isatty"
+	"io/ioutil"
+	"os"
+	"runtime"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -134,8 +135,42 @@ func parseArgs() args {
 	return a
 }
 
+var Reset = "\033[0m"
+var Red = "\033[31m"
+var Green = "\033[32m"
+var Yellow = "\033[33m"
+var Blue = "\033[34m"
+var Purple = "\033[35m"
+var Cyan = "\033[36m"
+var Gray = "\033[37m"
+var White = "\033[97m"
+
+func init() {
+	if runtime.GOOS == "windows" {
+		Reset = ""
+		Red = ""
+		Green = ""
+		Yellow = ""
+		Blue = ""
+		Purple = ""
+		Cyan = ""
+		Gray = ""
+		White = ""
+	}
+}
+
 //go:embed cheat.txt
 var cheatText string
+
+func init() {
+	cheatText = strings.ReplaceAll(cheatText, "=>", Green+"=>"+Reset)
+	cheatText = strings.ReplaceAll(cheatText, "$ ", Purple+"$ "+Reset)
+	cheatText = strings.ReplaceAll(cheatText, " jj", Cyan+" jj"+Reset)
+	for i := 30; i > 0; i-- {
+		num := fmt.Sprintf("%d. ", i)
+		cheatText = strings.Replace(cheatText, num, Red+num+Reset, 1)
+	}
+}
 
 func printCheatsAndExit() {
 	fmt.Println(cheatText)
