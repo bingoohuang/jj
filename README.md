@@ -4,6 +4,18 @@ JJ (get/set json values quickly) provides a [fast](#performance) and [simple](#g
 It has features such as [one line retrieval](#get-a-value), [dot notation paths](#path-syntax), [iteration](#iterate-through-an-object-or-array), 
 and [parsing json lines](#json-lines).
 
+this is a merged version of:
+
+1. [tidwall/sjson](https://github.com/tidwall/sjson)
+1. [tidwall/gjson](https://github.com/tidwall/gjson)
+1. [tidwall/pjson](https://github.com/tidwall/pjson)
+1. [tidwall/jj](https://github.com/tidwall/jj)
+
+with extensions:
+
+1. support -1 for jj.Get to get the last element of an array.
+1. print example usages for command line jj.
+
 To start using jj, install Go and run `go get`: `go get github.com/bingoohuang/jj`
 
 ## Get/Set a value
