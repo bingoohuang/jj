@@ -1018,3 +1018,7 @@ $ time cat citylots.json | jj -O -v 12A features.10000.properties.LOT_NUM > /dev
 cat citylots.json  0.01s user 0.08s system 23% cpu 0.368 total
 jj -O -v 12A features.10000.properties.LOT_NUM > /dev/null  0.22s user 0.27s system 121% cpu 0.406 total
 ```
+
+## Resources
+
+1. [go-jmespath is a GO implementation of JMESPath, which is a query language for JSON](https://github.com/jmespath/go-jmespath)
