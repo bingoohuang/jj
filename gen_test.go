@@ -88,4 +88,5 @@ func TestGenExample(t *testing.T) {
 	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-ddTHH:mm:ss)"}`))                    // {"day":"2021-06-06T20:07:36"}
 	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-dd,1990-01-01,2021-06-06)"}`))       // {"day":"1996-06-04"}
 	fmt.Println(jj.Gen(`{"day": "@random_time(sep=# yyyy-MM-dd#1990-01-01#2021-06-06)"}`)) // {"day":"1995-08-23"}
+	fmt.Println(jj.Gen(`{"uid": "@uuid"}`))                                                // {"uid":"619f3117-3c76-4b3f-941c-7df2a109b625"}
 }

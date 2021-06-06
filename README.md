@@ -597,7 +597,7 @@ Generate a random json for benchmarks or testing.
 ```go
 jj.Gen(`["|1-3", { "id": "@objectId",  "tags": ["|1-2", "@random(5-10)"] }]`)
 // [{"id":"60bcba88ac8b71e848c7d0a7","tags":["qxr_yv"]},{"id":"60bcba88ac8b71e848c7d0a8","tags":["v4G9Xnd","xCsWH4"]}]
-jj.Gen(`{"id": "@objectId"}`)               // {"id":"60bcba88ac8b71e848c7d0a6"}
+jj.Gen(`{"id": "@objectId"}`)  // {"id":"60bcba88ac8b71e848c7d0a6"}
 jj.Gen(`{"id": "@random(red,green,blue)"}`) // {"id":"red"}
 jj.Gen(`{"id": "@random(1,2,3)"}`) // {"id":"3"}
 jj.Gen(`{"id": "@regex([abc]{10})"}`) // {"id":"ccbbbaaccc"}
@@ -605,12 +605,13 @@ jj.Gen(`{"id|2-5": "1" }`)      // {"id":"11"}
 jj.Gen(`{"id": "@random_int"}`) // {"id":1991593051}
 jj.Gen(`{"id": "@random_int(100-999)"}`) // {"id":330}
 jj.Gen(`{"id": "Hello@random_int(100-999)"}`) // {"id":"Hello846"}
-jj.Gen(`{"ok": "@random_bool"}`)              // {"ok":true}
+jj.Gen(`{"ok": "@random_bool"}`)  // {"ok":true}
 jj.Gen(`{"day": "@random_time"}`) // {"day":"2021-06-06T20:07:36.15813+08:00"}
-jj.Gen(`{"day": "@random_time(yyyy-MM-dd)"}`)          // {"day":"2021-06-06"}
+jj.Gen(`{"day": "@random_time(yyyy-MM-dd)"}`) // {"day":"2021-06-06"}
 jj.Gen(`{"day": "@random_time(yyyy-MM-ddTHH:mm:ss)"}`) // {"day":"2021-06-06T20:07:36"}
 jj.Gen(`{"day": "@random_time(yyyy-MM-dd,1990-01-01,2021-06-06)"}`) // {"day":"1996-06-04"}
 jj.Gen(`{"day": "@random_time(sep=# yyyy-MM-dd#1990-01-01#2021-06-06)"}`) // {"day":"1995-08-23"}
+jj.Gen(`{"uid": "@uuid"}`) // {"uid":"619f3117-3c76-4b3f-941c-7df2a109b625"}
 ```
 
 ## Performance
@@ -918,8 +919,8 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 26. The `-u` flag will compress the json into the fewest characters possible by squashing newlines and spaces.
 27. $ echo '{"id":"@objectId", "sex":"@random(male,female)"}' | jj -g -u   => {"id":"60bcc2775555280f79cb02d2","sex":"male"}
 28. $ echo '["|2", {"id":"@objectId", "sex":"@random(male,female)"}]' | jj -g -u => [{"id":"60bcc26c6fbe0704ed2636cd","sex":"male"},{"id":"60bcc26c6fbe0704ed2636ce","sex":"female"}]
-29. $ echo '{"id":"@objectId", "sex":"@random(male,female)", "age":"@random_int(20-60)", "day":"@random_time(yyyy-MM-dd)", "valid":"@random_bool", "email":"@regex([a-z]{5}@xyz[.]cn)"}' | jj -g -u
-{"id":"60bcc4511995718d01d90be5","sex":"female","age":42,"day":"2021-06-06","valid":false,"email":"vubxv@xyz.cn"}
+29. $ echo '{"id":"@objectId", "uid":"@uuid", "sex":"@random(male,female)", "age":"@random_int(20-60)", "day":"@random_time(yyyy-MM-dd)", "valid":"@random_bool", "email":"@regex([a-z]{5}@xyz[.]cn)"}' | jj -g -u
+{"id":"60bcc4511995718d01d90be5","uid":"619f3117-3c76-4b3f-941c-7df2a109b625","sex":"female","age":42,"day":"2021-06-06","valid":false,"email":"vubxv@xyz.cn"}
 ```
 
 ### Examples
