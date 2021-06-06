@@ -4,6 +4,18 @@ JJ (get/set json values quickly) provides a [fast](#performance) and [simple](#g
 json document. It has features such as [one line retrieval](#get-a-value), [dot notation paths](#path-syntax)
 , [iteration](#iterate-through-an-object-or-array), and [parsing json lines](#json-lines).
 
+this is a merged version of:
+
+1. [tidwall/sjson](https://github.com/tidwall/sjson)
+1. [tidwall/gjson](https://github.com/tidwall/gjson)
+1. [tidwall/pjson](https://github.com/tidwall/pjson)
+1. [tidwall/jj](https://github.com/tidwall/jj)
+
+with extensions:
+
+1. support -1 for jj.Get to get the last element of an array.
+1. print example usages for command line jj.
+
 To start using jj, install Go and run `go get`: `go get github.com/bingoohuang/jj`
 
 ## Get/Set a value
@@ -835,25 +847,75 @@ Install `go get github.com/bingoohuang/jj/...`
 
 ```
 $ jj -h
-
-usage: jj [-v value] [-urOD] [-i infile] [-o outfile] keypath
-
-examples: jj keypath                      read value from stdin
-      or: jj -i infile keypath            read value from infile
-      or: jj -v value keypath             edit value
-      or: jj -v value -o outfile keypath  edit value and write to outfile
-
+jj - JSON Stream Editor 1.0.1
+usage: jj [-v value] [-curnOD] [-i infile] [-o outfile] keypath
+eg.: jj keypath                      read value from stdin
+     jj -i infile keypath            read value from infile
+     jj -v value keypath             edit value
+     jj -v value -o outfile keypath  edit value and write to outfile
 options:
-      -v value             Edit JSON key path value
-      -u                   Make json ugly, keypath is optional
-      -r                   Use raw values, otherwise types are auto-detected
-      -n                   Do not output color or extra formatting
-      -O                   Performance boost for value updates
-      -D                   Delete the value at the specified key path
-      -l                   Output array values on multiple lines
-      -i infile            Use input file instead of stdin
-      -o outfile           Use output file instead of stdout
-      keypath              JSON key path (like "name.last")
+     -v value   Edit JSON key path value
+     -c         Print cheatsheet
+     -u         Make json ugly, keypath is optional
+     -r         Use raw values, otherwise types are auto-detected
+     -n         Do not output color or extra formatting
+     -O         Performance boost for value updates
+     -D         Delete the value at the specified key path
+     -l         Output array values on multiple lines
+     -i infile  Use input file instead of stdin
+     -o outfile Use output file instead of stdout
+     -k keypath JSON key path (like "name.last")
+     -K keypath JSON key path as raw whole key
+      keypath   Last argument for JSON key path
+$ jj -c
+1. Get a string:        $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name.last    => Smith
+2. Get a block of JSON: $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name         => {"first":"Tom","last":"Smith"}
+3. Get a non-existent : $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name.middle  => null
+4. Get the raw string : $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj -r name.last => "Smith"
+5. Get array value by index:
+$ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.1   => Jane
+$ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.-1  => Carol
+$ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.-2  => Jane
+6. Raw key(treat key as a single raw key without any other key path meaning)
+$ echo '{"friends.-1":["Andy","Carol"]}' | jj -K friends.-1  => ["Andy", "Carol"]
+7. JSON Lines lines.json file:
+{"name": "Gilbert", "age": 61}
+{"name": "Alexa", "age": 34}
+{"name": "May", "age": 57}
+8. $ jj -i lines.json  ..#       => 3
+9. $ jj -i lines.json  ..1       => {"name": "Alexa", "age": 34}
+10. $ jj -i lines.json  ..#.name => ["Gilbert","Alexa","May"]
+11. $ jj -i lines.json  "..#[name="May"].age"=> 57
+12. Update a value:  $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj -v Andy name.first => {"name":{"first":"Andy","last":"Smith"}}
+13. Set a new value: $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj -v 46 age => {"age":46,"name":{"first":"Tom","last":"Smith"}}
+14. Set a new nested value: $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj -v relax task.today => {"task":{"today":"relax"},"name":{"first":"Tom","last":"Smith"}}
+15. Replace an array value by index: $ echo '{"friends":["Tom","Jane","Carol"]}' | jj -v Andy friends.1   => {"friends":["Tom","Andy","Carol"]}
+16. Append an array: $ echo '{"friends":["Tom","Jane","Carol"]}' | jj -v Andy friends.-1  => {"friends":["Tom","Andy","Carol","Andy"]}
+17. Set an array value that's past the bounds: $ echo '{"friends":["Tom","Jane","Carol"]}' | jj -v Andy friends.5   => {"friends":["Tom","Andy","Carol",null,null,"Andy"]}
+18. Set a raw block of JSON: $ echo '{"name":"Carol"}' | jj -r -v '["Tom","Andy"]' friends  => {"friends":["Tom","Andy"],"name":"Carol"}
+19. Start new JSON document: $ echo '' | jj -v 'Sam' name.first      => {"name":{"first":"Sam"}}
+20. Delete a value: $ echo '{"age":46,"name":{"first":"Tom","last":"Smith"}}' | jj -D age   => {"name":{"first":"Tom","last":"Smith"}}
+21. Delete an array value by index: $ echo '{"friends":["Andy","Carol"]}' | jj -D friends.0 => {"friends":["Carol"]}
+22. Delete last item in array: $ echo '{"friends":["Andy","Carol"]}' | jj -D friends.-1     => {"friends":["Andy"]}
+23. Optimistically -O update a value (when the caller expects that a value at the specified keypath already exists.)
+Using this option can speed up an operation by as much as 6x, but slow down as much as 20% when the value does not exist.
+$ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj -v Tim -uO name.first => {"name":{"first":"Tim","last":"Smith"}}
+The `-O` tells jj that the `name.first` likely exists so try a fasttrack operation first.
+24. Pretty printing: $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name
+{
+  "first": "Tom",
+  "last": "Smith"
+}
+25. $ echo '{"foo": "lorem", "bar": "ipsum"}{"foo": "lorem", "bar": "ipsum"}' | jj
+{
+  "foo": "lorem",
+  "bar": "ipsum"
+}
+{
+  "foo": "lorem",
+  "bar": "ipsum"
+}
+26. The `-u` flag will compress the json into the fewest characters possible by squashing newlines and spaces.
 ```
 
 ### Examples
@@ -1111,3 +1173,8 @@ $ time cat citylots.json | jj -O -v 12A features.10000.properties.LOT_NUM > /dev
 cat citylots.json  0.01s user 0.08s system 23% cpu 0.368 total
 jj -O -v 12A features.10000.properties.LOT_NUM > /dev/null  0.22s user 0.27s system 121% cpu 0.406 total
 ```
+
+## Resources
+
+1. [Json Incremental Digger, drill down JSON interactively by using filtering queries like jq](https://github.com/simeji/jid)
+2. [go-jmespath is a GO implementation of JMESPath, which is a query language for JSON](https://github.com/jmespath/go-jmespath)
