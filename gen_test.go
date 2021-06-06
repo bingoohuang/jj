@@ -7,9 +7,6 @@ import (
 	"testing"
 )
 
-// https://github.com/nuysoft/Mock/wiki/Syntax-Specification
-// https://www.json-generator.com/
-
 func TestGenKeyHitRepeat(t *testing.T) {
 	assert.Equal(t, `{"id":"11"}`, jj.NewGenContext().Gen(`{"id|2": "1" }`))
 }
@@ -75,23 +72,20 @@ func TestParseSubstitutes(t *testing.T) {
 }
 
 func TestGenExample(t *testing.T) {
-	fmt.Println(jj.Gen(`{"id": "@objectId"}`))
 	fmt.Println(jj.Gen(`["|1-3", { "id": "@objectId",  "tags": ["|1-2", "@random(5-10)"] }]`))
-	fmt.Println(jj.Gen(`{"id": "@random(red,green,blue)"}`))
-	fmt.Println(jj.Gen(`{"id": "@random(1,2,3)"}`))
-	fmt.Println(jj.Gen(`{"id": "@regex([abc]{10})"}`))
-	fmt.Println(jj.Gen(`{"id|2-5": "1" }`))
-
-	fmt.Println(jj.Gen(`{"id": "@random_int"}`))
-	fmt.Println(jj.Gen(`{"id": "@random_int(100-999)"}`))
-	fmt.Println(jj.Gen(`{"id": "Hello@random_int(100-999)"}`))
-	fmt.Println(jj.Gen(`{"ok": "@random_bool"}`))
-
-	fmt.Println(jj.Gen(`{"day": "@random_time"}`))
-	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-dd)"}`))
-	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-ddTHH:mm:ss)"}`))
-	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-ddTHH:mm:ss)"}`))
-	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-dd,1990-01-01,2021-06-06)"}`))
-	fmt.Println(jj.Gen(`{"day": "@random_time(sep=# yyyy-MM-dd#1990-01-01#2021-06-06)"}`))
-	fmt.Println(jj.Gen(`{"day": "@random_time(sep=# yyyy-MM-dd#1990-01-01#2021-06-06)"}`))
+	// [{"id":"60bcba88ac8b71e848c7d0a7","tags":["qxr_yv"]},{"id":"60bcba88ac8b71e848c7d0a8","tags":["v4G9Xnd","xCsWH4"]}]
+	fmt.Println(jj.Gen(`{"id": "@objectId"}`))                                             // {"id":"60bcba88ac8b71e848c7d0a6"}
+	fmt.Println(jj.Gen(`{"id": "@random(red,green,blue)"}`))                               // {"id":"red"}
+	fmt.Println(jj.Gen(`{"id": "@random(1,2,3)"}`))                                        // {"id":"3"}
+	fmt.Println(jj.Gen(`{"id": "@regex([abc]{10})"}`))                                     // {"id":"ccbbbaaccc"}
+	fmt.Println(jj.Gen(`{"id|2-5": "1" }`))                                                // {"id":"11"}
+	fmt.Println(jj.Gen(`{"id": "@random_int"}`))                                           // {"id":1991593051}
+	fmt.Println(jj.Gen(`{"id": "@random_int(100-999)"}`))                                  // {"id":330}
+	fmt.Println(jj.Gen(`{"id": "Hello@random_int(100-999)"}`))                             // {"id":"Hello846"}
+	fmt.Println(jj.Gen(`{"ok": "@random_bool"}`))                                          // {"ok":true}
+	fmt.Println(jj.Gen(`{"day": "@random_time"}`))                                         // {"day":"2021-06-06T20:07:36.15813+08:00"}
+	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-dd)"}`))                             // {"day":"2021-06-06"}
+	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-ddTHH:mm:ss)"}`))                    // {"day":"2021-06-06T20:07:36"}
+	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-dd,1990-01-01,2021-06-06)"}`))       // {"day":"1996-06-04"}
+	fmt.Println(jj.Gen(`{"day": "@random_time(sep=# yyyy-MM-dd#1990-01-01#2021-06-06)"}`)) // {"day":"1995-08-23"}
 }
