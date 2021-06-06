@@ -13,8 +13,8 @@ func TestGenKeyHitRepeat(t *testing.T) {
 
 func TestGenKeyHitRepeatObjectId(t *testing.T) {
 	gen := jj.NewGenContext()
-	gen.RegisterFn("objectId", func(args string) interface{} { return 456 })
-	assert.Equal(t, `{"id":"456456"}`, gen.Gen(`{"id|2": "@objectId" }`))
+	gen.RegisterFn("对象ID", func(args string) interface{} { return 456 })
+	assert.Equal(t, `{"id":"456456"}`, gen.Gen(`{"id|2": "@对象ID" }`))
 }
 
 func TestGenRepeatObject(t *testing.T) {

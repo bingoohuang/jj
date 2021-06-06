@@ -299,12 +299,24 @@ func ParseSubstitutes(src string) Subs {
 	return subs
 }
 
+// IsChinese from https://studygolang.com/articles/27638
+func IsChinese(str string) bool {
+	var count int
+	for _, v := range str {
+		if unicode.Is(unicode.Han, v) {
+			count++
+			break
+		}
+	}
+	return count > 0
+}
+
 func parseName(s *string, left *string) (subLiteral, subVar Sub) {
 	name := ""
 	offset := 0
 	for i, r := range *s {
 		offset = i
-		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-') {
+		if !(unicode.IsLetter(r) || unicode.Is(unicode.Han, r) || unicode.IsDigit(r) || r == '_' || r == '-') {
 			name = (*s)[:i]
 			break
 		}
