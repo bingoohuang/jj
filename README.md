@@ -267,8 +267,8 @@ To directly access the value:
 ```go
 result.Type // can be String, Number, True, False, Null, or JSON
 result.Str  // holds the string
-result.Num // holds the float64 number
-result.Raw // holds the raw json
+result.Num   // holds the float64 number
+result.Raw   // holds the raw json
 result.Index // index of raw value in original json, zero means index unknown
 ```
 
@@ -396,10 +396,10 @@ For example, here we create a modifier that makes the entire json document upper
 ```go
 jj.AddModifier("case", func (jso, arg string) string {
 if arg == "upper" {
-return strings.ToUpper(jso)
+	return strings.ToUpper(jso)
 }
 if arg == "lower" {
-return strings.ToLower(jso)
+	return strings.ToLower(jso)
 }
 return json
 })
@@ -436,7 +436,7 @@ The `ForEachLines` function will iterate through JSON lines.
 
 ```go
 jj.ForEachLine(json, func (line jj.Result) bool{
-println(line.String())
+	println(line.String())
 return true
 })
 ```
@@ -469,7 +469,7 @@ You would use the path "programmers.#.lastName" like such:
 ```go
 result := jj.Get(json, "programmers.#.lastName")
 for _, name := range result.Array() {
-println(name.String())
+	println(name.String())
 }
 ```
 
@@ -489,8 +489,8 @@ iteration.
 ```go
 result := jj.Get(json, "programmers")
 result.ForEach(func (key, value jj.Result) bool {
-println(value.String())
-return true // keep iterating
+	println(value.String())
+	return true // keep iterating
 })
 ```
 
@@ -513,14 +513,14 @@ Sometimes you just want to know if a value exists.
 ```go
 value := jj.Get(json, "name.last")
 if !value.Exists() {
-println("no last name")
+	println("no last name")
 } else {
-println(value.String())
+	println(value.String())
 }
 
 // Or as one step
 if jj.Get(json, "name.last").Exists() {
-println("has a last name")
+	println("has a last name")
 }
 ```
 
@@ -533,7 +533,7 @@ If you are consuming JSON from an unpredictable source then you may want to vali
 
 ```go
 if !jj.Valid(json) {
-return errors.New("invalid json")
+	return errors.New("invalid json")
 }
 value := jj.Get(json, "name.last")
 ```
@@ -545,7 +545,7 @@ To unmarshal to a `map[string]interface{}`:
 ```go
 m, ok := jj.Parse(json).Value().(map[string]interface{})
 if !ok {
-// not a map
+	// not a map
 }
 ```
 
@@ -567,9 +567,9 @@ var json []byte = ...
 result := jj.GetBytes(json, path)
 var raw []byte
 if result.Index > 0 {
-raw = json[result.Index:result.Index+len(result.Raw)]
+	raw = json[result.Index:result.Index+len(result.Raw)]
 } else {
-raw = []byte(result.Raw)
+	raw = []byte(result.Raw)
 }
 ```
 
@@ -597,17 +597,17 @@ Generate a random json for benchmarks or testing.
 ```go
 jj.Gen(`["|1-3", { "id": "@objectId",  "tags": ["|1-2", "@random(5-10)"] }]`)
 // [{"id":"60bcba88ac8b71e848c7d0a7","tags":["qxr_yv"]},{"id":"60bcba88ac8b71e848c7d0a8","tags":["v4G9Xnd","xCsWH4"]}]
-jj.Gen(`{"id": "@objectId"}`) // {"id":"60bcba88ac8b71e848c7d0a6"}
+jj.Gen(`{"id": "@objectId"}`)               // {"id":"60bcba88ac8b71e848c7d0a6"}
 jj.Gen(`{"id": "@random(red,green,blue)"}`) // {"id":"red"}
 jj.Gen(`{"id": "@random(1,2,3)"}`) // {"id":"3"}
 jj.Gen(`{"id": "@regex([abc]{10})"}`) // {"id":"ccbbbaaccc"}
-jj.Gen(`{"id|2-5": "1" }`) // {"id":"11"}
+jj.Gen(`{"id|2-5": "1" }`)      // {"id":"11"}
 jj.Gen(`{"id": "@random_int"}`) // {"id":1991593051}
 jj.Gen(`{"id": "@random_int(100-999)"}`) // {"id":330}
 jj.Gen(`{"id": "Hello@random_int(100-999)"}`) // {"id":"Hello846"}
-jj.Gen(`{"ok": "@random_bool"}`) // {"ok":true}
+jj.Gen(`{"ok": "@random_bool"}`)              // {"ok":true}
 jj.Gen(`{"day": "@random_time"}`) // {"day":"2021-06-06T20:07:36.15813+08:00"}
-jj.Gen(`{"day": "@random_time(yyyy-MM-dd)"}`) // {"day":"2021-06-06"}
+jj.Gen(`{"day": "@random_time(yyyy-MM-dd)"}`)          // {"day":"2021-06-06"}
 jj.Gen(`{"day": "@random_time(yyyy-MM-ddTHH:mm:ss)"}`) // {"day":"2021-06-06T20:07:36"}
 jj.Gen(`{"day": "@random_time(yyyy-MM-dd,1990-01-01,2021-06-06)"}`) // {"day":"1996-06-04"}
 jj.Gen(`{"day": "@random_time(sep=# yyyy-MM-dd#1990-01-01#2021-06-06)"}`) // {"day":"1995-08-23"}
@@ -801,18 +801,18 @@ There's a `PrettyOptions(json, opts)` function which allows for customizing the 
 
 ```go
 type Options struct {
-// Width is an max column width for single line arrays
-// Default 80
-Width int
-// Prefix is a prefix for all lines
-// Default empty
-Prefix string
-// Indent is the nested indentation
-// Default two spaces
-Indent string
-// SortKeys will sort the keys alphabetically
-// Default false
-SortKeys bool
+	// Width is an max column width for single line arrays
+	// Default 80
+	Width int
+	// Prefix is a prefix for all lines
+	// Default empty
+	Prefix string
+	// Indent is the nested indentation
+	// Default two spaces
+	Indent string
+	// SortKeys will sort the keys alphabetically
+	// Default false
+	SortKeys bool
 }
 ```
 
@@ -916,6 +916,10 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
   "bar": "ipsum"
 }
 26. The `-u` flag will compress the json into the fewest characters possible by squashing newlines and spaces.
+27. $ echo '{"id":"@objectId", "sex":"@random(male,female)"}' | jj -g -u   => {"id":"60bcc2775555280f79cb02d2","sex":"male"}
+28. $ echo '["|2", {"id":"@objectId", "sex":"@random(male,female)"}]' | jj -g -u => [{"id":"60bcc26c6fbe0704ed2636cd","sex":"male"},{"id":"60bcc26c6fbe0704ed2636ce","sex":"female"}]
+29. $ echo '{"id":"@objectId", "sex":"@random(male,female)", "age":"@random_int(20-60)", "day":"@random_time(yyyy-MM-dd)", "valid":"@random_bool", "email":"@regex([a-z]{5}@xyz[.]cn)"}' | jj -g -u
+{"id":"60bcc4511995718d01d90be5","sex":"female","age":42,"day":"2021-06-06","valid":false,"email":"vubxv@xyz.cn"}
 ```
 
 ### Examples

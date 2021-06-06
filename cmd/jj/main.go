@@ -31,6 +31,7 @@ options:
      -D         Delete the value at the specified key path
      -l         Output array values on multiple lines
      -i infile  Use input file instead of stdin
+     -g         Generate random JSON by input
      -o outfile Use output file instead of stdout
      -k keypath JSON key path (like "name.last")
      -K keypath JSON key path as raw whole key
@@ -50,6 +51,7 @@ type args struct {
 	notty     bool
 	lines     bool
 	rawKey    bool
+	gen       bool
 }
 
 func parseArgs() args {
@@ -94,6 +96,8 @@ func parseArgs() args {
 						a.notty = true
 					case 'l':
 						a.lines = true
+					case 'g':
+						a.gen = true
 					}
 				}
 				continue
@@ -195,7 +199,10 @@ func main() {
 	if err != nil {
 		goto fail
 	}
-	if a.del {
+
+	if a.gen {
+		outb = []byte(jj.Gen(string(input)))
+	} else if a.del {
 		outb, err = jj.DeleteBytes(input, a.keypath, opts)
 		if err != nil {
 			goto fail
