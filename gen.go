@@ -2,16 +2,14 @@ package jj
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/bingoohuang/gg/pkg/timee"
+	"github.com/bingoohuang/gg/pkg/randx"
+	"github.com/bingoohuang/gg/pkg/timex"
 	"github.com/bingoohuang/jj/reggen"
 	"io"
 	"log"
-	"math"
-	"math/big"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -437,29 +435,29 @@ func (r *GenContext) parseRepeat(s string) *Repeater {
 		return nil
 	}
 
-	times = Ifi(r.MockTimes > 0, r.MockTimes, times)
-	return &Repeater{Key: key, Times: times}
+	n := Ifi(r.MockTimes > 0, r.MockTimes, int(times))
+	return &Repeater{Key: key, Times: n}
 }
 
-func parseRandSize(s string) (from, to, time int, err error) {
+func parseRandSize(s string) (from, to, time int64, err error) {
 	p := strings.Index(s, "-")
-	times := 0
+	times := int64(0)
 	if p < 0 {
-		if times, err = strconv.Atoi(s); err != nil {
+		if times, err = strconv.ParseInt(s, 10, 64); err != nil {
 			return 0, 0, 0, err
 		}
 		return times, times, times, nil
 	}
 
-	from, err1 := strconv.Atoi(s[:p])
+	from, err1 := strconv.ParseInt(s[:p], 10, 64)
 	if err1 != nil {
 		return 0, 0, 0, err1
 	}
-	to, err2 := strconv.Atoi(s[p+1:])
+	to, err2 := strconv.ParseInt(s[p+1:], 10, 64)
 	if err2 != nil {
 		return 0, 0, 0, err2
 	}
-	times = RandBetween(from, to)
+	times = randx.Int64Between(from, to)
 	return from, to, times, nil
 }
 
@@ -487,50 +485,6 @@ func Ifi(b bool, x, y int) int {
 	return y
 }
 
-func RandInt() int {
-	// calculate the max we will be using
-	bg := big.NewInt(math.MaxInt32)
-
-	// get big.Int between 0 and bg
-	// in this case 0 to 20
-	n, err := rand.Int(rander, bg)
-	if err != nil {
-		panic(err)
-	}
-
-	return int(n.Int64())
-}
-
-func RandBetweenInt64(min, max int64) int64 {
-	// calculate the max we will be using
-	bg := big.NewInt(max - min + 1)
-
-	// get big.Int between 0 and bg
-	// in this case 0 to 20
-	n, err := rand.Int(rander, bg)
-	if err != nil {
-		panic(err)
-	}
-
-	// add n to min to support the passed in range
-	return n.Int64() + min
-}
-
-func RandBetween(min, max int) int {
-	// calculate the max we will be using
-	bg := big.NewInt(int64(max - min + 1))
-
-	// get big.Int between 0 and bg
-	// in this case 0 to 20
-	n, err := rand.Int(rander, bg)
-	if err != nil {
-		panic(err)
-	}
-
-	// add n to min to support the passed in range
-	return int(n.Int64() + int64(min))
-}
-
 func ParseParams(params string) []string {
 	params = strings.TrimSpace(params)
 	sep := ","
@@ -541,70 +495,101 @@ func ParseParams(params string) []string {
 		}
 	}
 
-	return strings.Split(params, sep)
+	return SplitTrim(params, sep)
+}
+
+func SplitTrim(s, sep string) []string {
+	pp := strings.Split(s, sep)
+	p2 := make([]string, 0, len(pp))
+	for _, p := range pp {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			p2 = append(p2, p)
+		}
+	}
+
+	return p2
 }
 
 func RandomTime(args string) interface{} {
+	t := randx.Time()
 	if args == "" {
-		return time.Now().Format(time.RFC3339Nano)
+		return t.Format(time.RFC3339Nano)
 	}
 
 	pp := ParseParams(args)
-	layout := timee.ConvertLayout(pp[0])
+	if v, found := filter(pp, "now"); found {
+		t = time.Now()
+		pp = v
+	}
+
+	layout := timex.ConvertLayout(pp[0])
 	if len(pp) == 1 {
-		return time.Now().Format(layout)
+		return t.Format(layout)
 	}
 
 	if len(pp) == 3 {
 		from, err := time.ParseInLocation(layout, pp[1], time.Local)
 		if err != nil {
 			log.Printf("failed to parse %s by layout %s, error:%v", pp[1], pp[0], err)
-			return time.Now().Format(time.RFC3339Nano)
+			return t.Format(time.RFC3339Nano)
 		}
 		to, err := time.ParseInLocation(layout, pp[2], time.Local)
 		if err != nil {
 			log.Printf("failed to parse %s by layout %s, error:%v", pp[2], pp[0], err)
-			return time.Now().Format(time.RFC3339Nano)
+			return t.Format(time.RFC3339Nano)
 		}
 
 		fromUnix := from.Unix()
 		toUnix := to.Unix()
-		r := RandBetweenInt64(fromUnix, toUnix)
+		r := randx.Int64Between(fromUnix, toUnix)
 		return time.Unix(r, 0).Format(layout)
 	}
 
-	return time.Now().Format(time.RFC3339Nano)
+	return t.Format(time.RFC3339Nano)
+}
+
+func filter(pp []string, s string) (filtered []string, found bool) {
+	filtered = make([]string, 0, len(pp))
+	for _, p := range pp {
+		if p == s {
+			found = true
+		} else {
+			filtered = append(filtered, p)
+		}
+	}
+	return
 }
 
 func RandomBool(_ string) interface{} {
-	return RandBetween(0, 1) == 0
+	return randx.Bool()
 }
 
 func RandomInt(args string) interface{} {
 	if args == "" {
-		return RandInt()
+		return randx.Int64()
 	}
 
-	if i, err := strconv.Atoi(args); err == nil {
-		return RandBetween(0, i)
+	if i, err := strconv.ParseInt(args, 10, 64); err == nil {
+		return randx.Int64Between(0, i)
 	}
 
 	if from, to, _, err := parseRandSize(args); err == nil {
-		return RandBetween(from, to)
+		return randx.Int64Between(from, to)
 	}
 
 	var err error
-	vv := 0
+	vv := int64(0)
 	count := 0
 	for _, el := range strings.Split(args, ",") {
 		v := strings.TrimSpace(el)
 		if v == "" {
 			continue
-		} else if RandBetween(0, 1) == 0 {
+		} else if !randx.Bool() {
 			continue
 		}
 
-		if vv, err = strconv.Atoi(v); err == nil {
+		if vv, err = strconv.ParseInt(v, 10, 64); err == nil {
 			return vv
 		}
 		count++
@@ -614,19 +599,19 @@ func RandomInt(args string) interface{} {
 		return vv
 	}
 
-	return RandInt()
+	return randx.Int64()
 }
 
 func Random(args string) interface{} {
 	if args == "" {
-		return RandStr(10)
+		return randx.String(10)
 	}
 	if i, err := strconv.Atoi(args); err == nil {
-		return RandStr(i)
+		return randx.String(i)
 	}
 
 	if _, _, times, err := parseRandSize(args); err == nil {
-		return RandStr(times)
+		return randx.String(int(times))
 	}
 
 	lastEl := ""
@@ -635,7 +620,7 @@ func Random(args string) interface{} {
 			continue
 		}
 
-		if RandBetween(0, 1) == 0 {
+		if randx.Bool() {
 			return el
 		}
 	}
@@ -644,7 +629,7 @@ func Random(args string) interface{} {
 		return lastEl
 	}
 
-	return RandStr(10)
+	return randx.String(10)
 }
 
 func Regex(args string) interface{} {
@@ -653,14 +638,6 @@ func Regex(args string) interface{} {
 		log.Printf("bad regex: %s, err: %v", args, err)
 	}
 	return g
-}
-
-// RandStr copy from https://stackoverflow.com/a/50581165.
-func RandStr(n int) string {
-	buff := make([]byte, n)
-	_, _ = rand.Read(buff)
-	// Base 64 can be longer than len
-	return base64.RawURLEncoding.EncodeToString(buff)[:n]
 }
 
 // ObjectID is the BSON ObjectID type.
