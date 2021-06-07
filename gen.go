@@ -138,17 +138,15 @@ func (r *GenRun) walk(start, end, info int) int {
 
 func (r *GenRun) Eval(subs vars.Subs, quote bool) (s string) {
 	result := subs.Eval(r.SubstitutionFns)
-	switch v := result.(type) {
-	case string:
+	if v, ok := result.(string); ok {
 		if quote {
 			return strconv.Quote(v)
 		} else {
 			return v
 		}
-	default:
-		return vars.ToString(result)
 	}
 
+	return vars.ToString(result)
 }
 
 func (r *GenRun) repeatStr(element string) {
