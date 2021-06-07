@@ -6,12 +6,12 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/bingoohuang/gg/pkg/timee"
 	"github.com/bingoohuang/jj/reggen"
 	"io"
 	"log"
 	"math"
 	"math/big"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -22,11 +22,11 @@ import (
 var DefaultGen = NewGenContext()
 
 func init() {
+	DefaultGen.RegisterFn("random", Random)
 	DefaultGen.RegisterFn("random_int", RandomInt)
 	DefaultGen.RegisterFn("random_bool", RandomBool)
 	DefaultGen.RegisterFn("random_time", RandomTime)
 	DefaultGen.RegisterFn("objectId", ObjectId)
-	DefaultGen.RegisterFn("random", Random)
 	DefaultGen.RegisterFn("regex", Regex)
 	DefaultGen.RegisterFn("uuid", Uuid)
 }
@@ -371,18 +371,6 @@ func ParseSubstitutes(src string) Subs {
 	return subs
 }
 
-// IsChinese from https://studygolang.com/articles/27638
-func IsChinese(str string) bool {
-	var count int
-	for _, v := range str {
-		if unicode.Is(unicode.Han, v) {
-			count++
-			break
-		}
-	}
-	return count > 0
-}
-
 func parseName(s *string, left *string) (subLiteral, subVar Sub) {
 	name := ""
 	offset := 0
@@ -513,20 +501,6 @@ func RandInt() int {
 	return int(n.Int64())
 }
 
-func RandInt64() int64 {
-	// calculate the max we will be using
-	bg := big.NewInt(math.MaxInt64)
-
-	// get big.Int between 0 and bg
-	// in this case 0 to 20
-	n, err := rand.Int(rander, bg)
-	if err != nil {
-		panic(err)
-	}
-
-	return n.Int64()
-}
-
 func RandBetweenInt64(min, max int64) int64 {
 	// calculate the max we will be using
 	bg := big.NewInt(max - min + 1)
@@ -570,31 +544,13 @@ func ParseParams(params string) []string {
 	return strings.Split(params, sep)
 }
 
-var timeFormatConvert = map[*regexp.Regexp]string{
-	regexp.MustCompile(`(?i)yyyy`): "2006",
-	regexp.MustCompile(`MM`):       "01",
-	regexp.MustCompile(`(?i)dd`):   "02",
-	regexp.MustCompile(`(?i)hh`):   "15",
-	regexp.MustCompile(`mm`):       "04",
-	regexp.MustCompile(`(?i)sss`):  "000",
-	regexp.MustCompile(`(?i)ss`):   "05",
-}
-
-func ConvertTimeLayout(s string) string {
-	for r, f := range timeFormatConvert {
-		s = r.ReplaceAllString(s, f)
-	}
-
-	return s
-}
-
 func RandomTime(args string) interface{} {
 	if args == "" {
 		return time.Now().Format(time.RFC3339Nano)
 	}
 
 	pp := ParseParams(args)
-	layout := ConvertTimeLayout(pp[0])
+	layout := timee.ConvertLayout(pp[0])
 	if len(pp) == 1 {
 		return time.Now().Format(layout)
 	}
@@ -620,7 +576,7 @@ func RandomTime(args string) interface{} {
 	return time.Now().Format(time.RFC3339Nano)
 }
 
-func RandomBool(args string) interface{} {
+func RandomBool(_ string) interface{} {
 	return RandBetween(0, 1) == 0
 }
 
@@ -702,7 +658,7 @@ func Regex(args string) interface{} {
 // RandStr copy from https://stackoverflow.com/a/50581165.
 func RandStr(n int) string {
 	buff := make([]byte, n)
-	rand.Read(buff)
+	_, _ = rand.Read(buff)
 	// Base 64 can be longer than len
 	return base64.RawURLEncoding.EncodeToString(buff)[:n]
 }
