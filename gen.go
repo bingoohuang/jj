@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/bingoohuang/gg/pkg/randx"
 	"github.com/bingoohuang/gg/pkg/timex"
+	"github.com/bingoohuang/gg/pkg/vars"
 	"github.com/bingoohuang/jj/reggen"
 	"io"
 	"log"
@@ -14,7 +15,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-	"unicode"
 )
 
 var DefaultGen = NewGenContext()
@@ -93,20 +93,20 @@ func (r *GenRun) walk(start, end, info int) int {
 
 			fallthrough
 		case IsToken(info, TokValue):
-			if subs := ParseSubstitutes(s); subs.CountVars() > 0 {
+			if subs := vars.ParseExpr(s); subs.CountVars() > 0 {
 				if r.repeater == nil {
-					r.Out += subs.Eval(r.SubstitutionFns, true)
+					r.Out += r.Eval(subs, true)
 					return 1
 				}
 
 				repeatedValue := ""
 				r.repeater.Repeat(func(last bool) {
 					if r.repeater.Key == "" {
-						if r.Out += subs.Eval(r.SubstitutionFns, true); !last {
+						if r.Out += r.Eval(subs, true); !last {
 							r.Out += ","
 						}
 					} else {
-						repeatedValue += subs.Eval(r.SubstitutionFns, false)
+						repeatedValue += r.Eval(subs, false)
 					}
 				})
 				if r.repeater.Key != "" {
@@ -136,6 +136,21 @@ func (r *GenRun) walk(start, end, info int) int {
 	return Ifi(r.Opens > 0, 1, 0)
 }
 
+func (r *GenRun) Eval(subs vars.Subs, quote bool) (s string) {
+	result := subs.Eval(r.SubstitutionFns)
+	switch v := result.(type) {
+	case string:
+		if quote {
+			return strconv.Quote(v)
+		} else {
+			return v
+		}
+	default:
+		return vars.ToString(result)
+	}
+
+}
+
 func (r *GenRun) repeatStr(element string) {
 	s := element[1 : len(element)-1]
 	repeatedValue := ""
@@ -156,189 +171,12 @@ func (r *GenRun) repeatStr(element string) {
 	r.repeater = nil
 }
 
-type Sub interface {
-	IsVar() bool
-}
-
-type Subs []Sub
-
-func (s Subs) CountVars() (count int) {
-	for _, sub := range s {
-		if sub.IsVar() {
-			count++
-		}
-	}
-
-	return
-}
-
-type Valuer interface {
-	Value(name, params string) interface{}
-}
-
 func (r SubstitutionFnMap) Value(name, params string) interface{} {
 	if f, ok := r[name]; ok {
 		return f(params)
 	}
 
 	return ""
-}
-
-func (s Subs) Eval(valuer Valuer, quote bool) string {
-	if len(s) == 1 && s.CountVars() == len(s) {
-		v := s[0].(*SubVar)
-		return convertValue(valuer, v, quote)
-	}
-
-	value := ""
-	for _, sub := range s {
-		switch v := sub.(type) {
-		case *SubLiteral:
-			value += v.Val
-		case *SubVar:
-			value += convertValue(valuer, v, false)
-		}
-	}
-
-	if quote {
-		return strconv.Quote(value)
-	}
-
-	return value
-}
-
-func convertValue(valuer Valuer, v *SubVar, quote bool) string {
-	value := valuer.Value(v.Name, v.Params)
-	switch vv := value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		return fmt.Sprintf("%d", vv)
-	case float32, float64:
-		return fmt.Sprintf("%f", vv)
-	case bool:
-		return fmt.Sprintf("%t", vv)
-	case string:
-		if quote {
-			return strconv.Quote(vv)
-		} else {
-			return vv
-		}
-	default:
-		vvv := fmt.Sprintf("%v", value)
-		if quote {
-			return strconv.Quote(vvv)
-		} else {
-			return vvv
-		}
-	}
-}
-
-type SubLiteral struct {
-	Val string
-}
-
-func (s SubLiteral) IsVar() bool { return false }
-
-type SubVar struct {
-	Name   string
-	Params string
-}
-
-func (s SubVar) IsVar() bool { return true }
-
-func ParseSubstitutes(src string) Subs {
-	s := src
-	var subs []Sub
-	left := ""
-	for {
-		a := strings.IndexByte(s, '@')
-		if a < 0 || a == len(s)-1 {
-			left += s
-			break
-		}
-
-		left += s[:a]
-
-		a++
-		s = s[a:]
-		if s[0] == '@' {
-			s = s[1:]
-			left += "@"
-		} else if s[0] == '{' {
-			if rb := strings.IndexByte(s, '}'); rb > 0 {
-				fn := s[1:rb]
-				s = s[rb+1:]
-
-				subLiteral, subVar := parseName(&fn, &left)
-				if subLiteral != nil {
-					subs = append(subs, subLiteral)
-				}
-				if subVar != nil {
-					subs = append(subs, subVar)
-				}
-			}
-		} else {
-			subLiteral, subVar := parseName(&s, &left)
-			if subLiteral != nil {
-				subs = append(subs, subLiteral)
-			}
-			if subVar != nil {
-				subs = append(subs, subVar)
-			}
-		}
-	}
-
-	if left != "" {
-		subs = append(subs, &SubLiteral{Val: left})
-	}
-
-	if Subs(subs).CountVars() == 0 {
-		return []Sub{&SubLiteral{Val: src}}
-	}
-
-	return subs
-}
-
-func parseName(s *string, left *string) (subLiteral, subVar Sub) {
-	name := ""
-	offset := 0
-	for i, r := range *s {
-		offset = i
-		if !(unicode.IsLetter(r) || unicode.Is(unicode.Han, r) || unicode.IsDigit(r) || r == '_' || r == '-') {
-			name = (*s)[:i]
-			break
-		}
-	}
-
-	nonParam := false
-	if name == "" && offset == len(*s)-1 {
-		nonParam = true
-		offset++
-		name = *s
-	}
-
-	if *left != "" {
-		subLiteral = &SubLiteral{Val: *left}
-		*left = ""
-	}
-
-	sv := &SubVar{
-		Name: name,
-	}
-	subVar = sv
-
-	if !nonParam && offset > 0 && offset < len(*s) {
-		if (*s)[offset] == '(' {
-			if rb := strings.IndexByte(*s, ')'); rb > 0 {
-				sv.Params = (*s)[offset+1 : rb]
-				*s = (*s)[rb+1:]
-				return
-			}
-		}
-	}
-
-	*s = (*s)[offset:]
-
-	return
 }
 
 type Repeater struct {

@@ -55,22 +55,6 @@ func TestGenObjectId(t *testing.T) {
 	assert.Equal(t, `{"id":"123"}`, gen.Gen(` {"id": "@objectId"} `))
 }
 
-func subLit(n string) *jj.SubLiteral { return &jj.SubLiteral{Val: n} }
-func subVar(n string) *jj.SubVar     { return &jj.SubVar{Name: n} }
-func subVarP(n, p string) *jj.SubVar { return &jj.SubVar{Name: n, Params: p} }
-
-func TestParseSubstitutes(t *testing.T) {
-	assert.Equal(t, jj.Subs{subVar("fn")}, jj.ParseSubstitutes("@fn"))
-	assert.Equal(t, jj.Subs{subVar("fn"), subLit("@")}, jj.ParseSubstitutes("@fn@"))
-	assert.Equal(t, jj.Subs{subLit("abc"), subVar("fn")}, jj.ParseSubstitutes("abc@{fn}"))
-	assert.Equal(t, jj.Subs{subVar("fn"), subVar("fn")}, jj.ParseSubstitutes("@fn@fn"))
-	assert.Equal(t, jj.Subs{subLit("abc"), subVar("fn"), subVar("fn"), subLit("efg")}, jj.ParseSubstitutes("abc@fn@{fn}efg"))
-	assert.Equal(t, jj.Subs{subLit("abc"), subVar("fn"), subVarP("fn", "1"), subLit("efg")}, jj.ParseSubstitutes("abc@fn@{fn(1)}efg"))
-	assert.Equal(t, jj.Subs{subVarP("fn", "100")}, jj.ParseSubstitutes("@fn(100)"))
-	assert.Equal(t, jj.Subs{subLit("@")}, jj.ParseSubstitutes("@"))
-	assert.Equal(t, jj.Subs{subLit("@@")}, jj.ParseSubstitutes("@@"))
-}
-
 func TestGenExample(t *testing.T) {
 	fmt.Println(jj.Gen(`["|1-3", { "id": "@objectId",  "tags": ["|1-2", "@random(5-10)"] }]`))
 	// [{"id":"60bcba88ac8b71e848c7d0a7","tags":["qxr_yv"]},{"id":"60bcba88ac8b71e848c7d0a8","tags":["v4G9Xnd","xCsWH4"]}]
