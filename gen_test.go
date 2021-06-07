@@ -8,40 +8,40 @@ import (
 )
 
 func TestGenKeyHitRepeat(t *testing.T) {
-	assert.Equal(t, `{"id":"11"}`, jj.NewGenContext().Gen(`{"id|2": "1" }`))
+	assert.Equal(t, `{"id":"11"}`, jj.NewGen().Gen(`{"id|2": "1" }`))
 }
 
 func TestGenKeyHitRepeatObjectId(t *testing.T) {
-	gen := jj.NewGenContext()
+	gen := jj.NewGen()
 	gen.RegisterFn("对象ID", func(args string) interface{} { return 456 })
 	assert.Equal(t, `{"id":"456456"}`, gen.Gen(`{"id|2": "@对象ID" }`))
 }
 
 func TestGenRepeatObject(t *testing.T) {
-	assert.Equal(t, `[{"id":123},{"id":123}]`, jj.NewGenContext().Gen(`["|2", { "id": 123 }]`))
+	assert.Equal(t, `[{"id":123},{"id":123}]`, jj.NewGen().Gen(`["|2", { "id": 123 }]`))
 }
 
 func TestGenRepeatString(t *testing.T) {
-	assert.Equal(t, `["123","123"]`, jj.NewGenContext().Gen(`["|2", "123"]`))
+	assert.Equal(t, `["123","123"]`, jj.NewGen().Gen(`["|2", "123"]`))
 }
 
 func TestGenRepeatInt(t *testing.T) {
-	assert.Equal(t, `[123,123]`, jj.NewGenContext().Gen(`["|2", 123]`))
+	assert.Equal(t, `[123,123]`, jj.NewGen().Gen(`["|2", 123]`))
 }
 
 func TestGenRepeatInt2(t *testing.T) {
-	assert.Equal(t, `[123,123,456]`, jj.NewGenContext().Gen(`["|2", 123, 456]`))
+	assert.Equal(t, `[123,123,456]`, jj.NewGen().Gen(`["|2", 123, 456]`))
 }
 
 func TestGenRepeatObjectId(t *testing.T) {
-	gen := jj.NewGenContext()
+	gen := jj.NewGen()
 	gen.MockTimes = 2
 	gen.RegisterFn("objectId", func(args string) interface{} { return 456 })
 	assert.Equal(t, `[{"id":456},{"id":456}]`, gen.Gen(`["|2-7", { "id": "@objectId" }]`))
 }
 
 func TestGenRepeat2(t *testing.T) {
-	gen := jj.NewGenContext()
+	gen := jj.NewGen()
 	gen.MockTimes = 2
 	gen.RegisterFn("objectId", func(args string) interface{} { return 456 })
 	gen.RegisterFn("random", func(args string) interface{} { return 1010 })
@@ -50,7 +50,7 @@ func TestGenRepeat2(t *testing.T) {
 }
 
 func TestGenObjectId(t *testing.T) {
-	gen := jj.NewGenContext()
+	gen := jj.NewGen()
 	gen.RegisterFn("objectId", func(args string) interface{} { return "123" })
 	assert.Equal(t, `{"id":"123"}`, gen.Gen(` {"id": "@objectId"} `))
 }

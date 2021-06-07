@@ -17,19 +17,24 @@ import (
 	"time"
 )
 
-var DefaultGen = NewGenContext()
+var DefaultSubstituteFns = SubstituteFnMap(map[string]SubstitutionFn{
+	"random":      Random,
+	"random_int":  RandomInt,
+	"random_bool": func(_ string) interface{} { return randx.Bool() },
+	"random_time": RandomTime,
+	"objectId":    func(string) interface{} { return NewObjectID().Hex() },
+	"regex":       Regex,
+	"uuid":        func(_ string) interface{} { return NewUUID().String() },
+})
 
-func init() {
-	DefaultGen.RegisterFn("random", Random)
-	DefaultGen.RegisterFn("random_int", RandomInt)
-	DefaultGen.RegisterFn("random_bool", func(_ string) interface{} { return randx.Bool() })
-	DefaultGen.RegisterFn("random_time", RandomTime)
-	DefaultGen.RegisterFn("objectId", func(string) interface{} { return NewObjectID().Hex() })
-	DefaultGen.RegisterFn("regex", Regex)
-	DefaultGen.RegisterFn("uuid", func(_ string) interface{} { return NewUUID().String() })
+type SubstituteFnMap map[string]SubstitutionFn
+
+func (r SubstituteFnMap) Register(fn string, f SubstitutionFn) { r[fn] = f }
+
+type Substitute interface {
+	vars.Valuer
+	Register(fn string, f SubstitutionFn)
 }
-
-type SubstitutionFnMap map[string]SubstitutionFn
 
 type GenRun struct {
 	Src           string
@@ -43,15 +48,14 @@ type GenRun struct {
 }
 
 type GenContext struct {
-	MockTimes       int
-	SubstitutionFns SubstitutionFnMap
+	MockTimes int
+	Substitute
 }
 
-func NewGenContext() *GenContext {
-	return &GenContext{
-		SubstitutionFns: map[string]SubstitutionFn{},
-	}
-}
+var DefaultGen = NewGen()
+
+func NewGenContext(s Substitute) *GenContext { return &GenContext{Substitute: s} }
+func NewGen() *GenContext                    { return NewGenContext(DefaultSubstituteFns) }
 
 func (r *GenRun) walk(start, end, info int) int {
 	element := r.Src[start:end]
@@ -137,7 +141,7 @@ func (r *GenRun) walk(start, end, info int) int {
 }
 
 func (r *GenRun) Eval(subs vars.Subs, quote bool) (s string) {
-	result := subs.Eval(r.SubstitutionFns)
+	result := subs.Eval(r.Substitute)
 	if v, ok := result.(string); ok {
 		if quote {
 			return strconv.Quote(v)
@@ -169,7 +173,7 @@ func (r *GenRun) repeatStr(element string) {
 	r.repeater = nil
 }
 
-func (r SubstitutionFnMap) Value(name, params string) interface{} {
+func (r SubstituteFnMap) Value(name, params string) interface{} {
 	if f, ok := r[name]; ok {
 		return f(params)
 	}
@@ -228,7 +232,7 @@ func parseRandSize(s string) (from, to, time int64, err error) {
 
 type SubstitutionFn func(args string) interface{}
 
-func (r *GenContext) RegisterFn(fn string, f SubstitutionFn) { r.SubstitutionFns[fn] = f }
+func (r *GenContext) RegisterFn(fn string, f SubstitutionFn) { r.Substitute.Register(fn, f) }
 
 func Gen(src string) string { return DefaultGen.Gen(src) }
 
