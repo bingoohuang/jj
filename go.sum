@@ -1,5 +1,5 @@
-github.com/bingoohuang/gg v0.0.0-20210608031449-0efcfd96edef h1:gSa1uY1ftwL1K+1SlS3uxY37i7Kjbbc6CAznNq4zHpg=
-github.com/bingoohuang/gg v0.0.0-20210608031449-0efcfd96edef/go.mod h1:kKNUAtRrABOvh5ztjh9Q5qtJBkx0sxwCHBQDBgWPhbw=
+github.com/bingoohuang/gg v0.0.0-20210608031951-72884199b0ac h1:rotU1tlCTqRCD4oXHr/ahSF2+FSlScIZnqsEIBJjlRA=
+github.com/bingoohuang/gg v0.0.0-20210608031951-72884199b0ac/go.mod h1:kKNUAtRrABOvh5ztjh9Q5qtJBkx0sxwCHBQDBgWPhbw=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
