@@ -288,7 +288,7 @@ func RandomTime(args string) interface{} {
 		pp = v
 	}
 
-	layout := timex.ConvertLayout(pp[0])
+	layout := timex.ConvertFormat(pp[0])
 	if len(pp) == 1 {
 		return t.Format(layout)
 	}
