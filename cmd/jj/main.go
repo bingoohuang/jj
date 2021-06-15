@@ -26,13 +26,13 @@ options:
      -c         Print cheatsheet
      -u         Make json ugly, keypath is optional
      -r         Use raw values, otherwise types are auto-detected
-     -n         Do not output color or extra formatting
+     -n         Do not modifyOutput color or extra formatting
      -O         Performance boost for value updates
      -D         Delete the value at the specified key path
      -l         Output array values on multiple lines
      -i infile  Use input file instead of stdin
      -g         Generate random JSON by input
-     -o outfile Use output file instead of stdout
+     -o outfile Use modifyOutput file instead of stdout
      -k keypath JSON key path (like "name.last")
      -K keypath JSON key path as raw whole key
       keypath   Last argument for JSON key path`
@@ -183,31 +183,47 @@ func printCheatsAndExit() {
 
 func main() {
 	a := parseArgs()
-	opts := jj.SetOptions{PathOption: jj.PathOption{RawPath: a.rawKey}}
-	var input []byte
-	var err error
-	var outb []byte
-	var outs string
-	var outa bool
-	var outt jj.Type
-	var f *os.File
-	if a.infile == nil {
-		input, err = ioutil.ReadAll(os.Stdin)
-	} else {
-		input, err = ioutil.ReadFile(*a.infile)
+	f := a.createOutFile()
+
+	outChan := make(chan Out)
+	go a.createOut(outChan)
+
+	for out := range outChan {
+		outData := a.modifyOutput(f, out)
+		_, _ = f.Write(outData)
 	}
+	_ = f.Close()
+}
+
+type Out struct {
+	Data    []byte
+	IsArray bool
+	Type    jj.Type
+}
+
+func (a args) createOut(outChan chan Out) {
+	input, err := createInput(a)
 	if err != nil {
-		goto fail
+		fail(err)
 	}
 
+	opts := jj.SetOptions{PathOption: jj.PathOption{RawPath: a.rawKey}}
 	if a.gen {
-		outb = []byte(jj.Gen(string(input)))
-	} else if a.del {
-		outb, err = jj.DeleteBytes(input, a.keypath, opts)
-		if err != nil {
-			goto fail
+		a.generate(outChan, input)
+		return
+	}
+
+	if a.del {
+		var out Out
+		if out.Data, err = jj.DeleteBytes(input, a.keypath, opts); err != nil {
+			fail(err)
 		}
-	} else if a.value != nil {
+		outChan <- out
+		close(outChan)
+		return
+	}
+
+	if a.value != nil {
 		raw := a.raw
 		val := *a.value
 		if !raw {
@@ -229,72 +245,114 @@ func main() {
 			opts.Optimistic = true
 			opts.ReplaceInPlace = true
 		}
+
+		var out Out
 		if raw {
 			// set as raw block
-			outb, err = jj.SetRawBytes(input, a.keypath, []byte(val), opts)
+			out.Data, err = jj.SetRawBytes(input, a.keypath, []byte(val), opts)
 		} else {
 			// set as a string
-			outb, err = jj.SetBytes(input, a.keypath, val, opts)
+			out.Data, err = jj.SetBytes(input, a.keypath, val, opts)
 		}
 		if err != nil {
-			goto fail
+			fail(err)
 		}
+
+		outChan <- out
+		close(outChan)
+		return
+	}
+
+	var out Out
+	if !a.keypathok {
+		out.Data = input
 	} else {
-		if !a.keypathok {
-			outb = input
+		res := jj.GetBytes(input, a.keypath, jj.WithRawPath(a.rawKey))
+		if a.raw {
+			out.Data = []byte(res.Raw)
 		} else {
-			res := jj.GetBytes(input, a.keypath, jj.WithRawPath(a.rawKey))
-			if a.raw {
-				outs = res.Raw
-			} else {
-				outt = res.Type
-				outa = res.IsArray()
-				outs = res.String()
-			}
+			out.Type = res.Type
+			out.IsArray = res.IsArray()
+			out.Data = []byte(res.String())
 		}
 	}
-	if a.outfile == nil {
-		f = os.Stdout
+
+	outChan <- out
+	close(outChan)
+	return
+}
+
+func (a args) generate(outChan chan Out, input []byte) chan Out {
+	gen := jj.NewGen()
+	s := string(input)
+	for {
+		genResult, i := gen.Process(s)
+		if i <= 0 {
+			break
+		}
+
+		var out Out
+		out.Data = []byte(genResult.Out)
+		outChan <- out
+		s = s[i:]
+	}
+
+	close(outChan)
+	return outChan
+}
+
+func createInput(a args) ([]byte, error) {
+	if a.infile == nil {
+		return ioutil.ReadAll(os.Stdin)
 	} else {
-		f, err = os.Create(*a.outfile)
-		if err != nil {
-			goto fail
-		}
+		return ioutil.ReadFile(*a.infile)
 	}
-	if outb == nil {
-		outb = []byte(outs)
+}
+
+func (a args) createOutFile() *os.File {
+	if a.outfile == nil {
+		return os.Stdout
 	}
-	if a.lines && outa {
+
+	f, err := os.Create(*a.outfile)
+	if err != nil {
+		fail(err)
+	}
+	return f
+}
+
+func fail(err error) {
+	fmt.Fprintf(os.Stderr, "error: %v\n", err.Error())
+	os.Exit(1)
+}
+
+func (a args) modifyOutput(f *os.File, out Out) []byte {
+	if a.lines && out.IsArray {
 		var outb2 []byte
-		jj.ParseBytes(outb).ForEach(func(_, v jj.Result) bool {
+		jj.ParseBytes(out.Data).ForEach(func(_, v jj.Result) bool {
 			outb2 = append(outb2, jj.Ugly([]byte(v.Raw))...)
 			outb2 = append(outb2, '\n')
 			return true
 		})
-		outb = outb2
-	} else if a.raw || outt != jj.String {
+		out.Data = outb2
+	} else if a.raw || out.Type != jj.String {
 		if a.ugly {
-			outb = jj.Ugly(outb)
+			out.Data = jj.Ugly(out.Data)
 		} else {
-			outb = jj.Pretty(outb)
+			out.Data = jj.Pretty(out.Data)
 		}
 	}
 	if !a.notty && isatty.IsTerminal(f.Fd()) {
-		if a.raw || outt != jj.String {
-			outb = jj.Color(outb, jj.TerminalStyle)
+		if a.raw || out.Type != jj.String {
+			out.Data = jj.Color(out.Data, jj.TerminalStyle)
 		} else {
-			outb = append([]byte(jj.TerminalStyle.String[0]), outb...)
-			outb = append(outb, jj.TerminalStyle.String[1]...)
+			out.Data = append([]byte(jj.TerminalStyle.String[0]), out.Data...)
+			out.Data = append(out.Data, jj.TerminalStyle.String[1]...)
 		}
-		for len(outb) > 0 && outb[len(outb)-1] == '\n' {
-			outb = outb[:len(outb)-1]
+		for len(out.Data) > 0 && out.Data[len(out.Data)-1] == '\n' {
+			out.Data = out.Data[:len(out.Data)-1]
 		}
-		outb = append(outb, '\n')
+		out.Data = append(out.Data, '\n')
 	}
-	_, _ = f.Write(outb)
-	_ = f.Close()
-	return
-fail:
-	fmt.Fprintf(os.Stderr, "error: %v\n", err.Error())
-	os.Exit(1)
+	return out.Data
 }

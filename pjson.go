@@ -41,7 +41,7 @@ const (
 // Returning -1 from 'iter' will skip all children elements in the current
 // Object or Array, which only applies when the 'info' for current element
 // has the Open bit set, otherwise it effectively works like returning 1.
-// This operation returns zero or a negative value if an error occured. This
+// This operation returns zero or a negative value if an error occurred. This
 // value represents the position that the parser was at when it discovered the
 // error. To get the true offset multiple this value by -1.
 //   e := StreamParse(json, iter)
