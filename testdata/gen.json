@@ -1,2 +1,15 @@
-{"id":"@objectId", "sex":"@random(male,female)"}
-{"id":"@objectId", "sex":"@random(male,female)"}
+[
+  "|10",
+  {
+    "id": "@objectId",
+    "sex": "@random(male,female)",
+    "name": "@姓名",
+    "gender": "@性别",
+    "addr": "@地址",
+    "mobile": "@手机",
+    "chinaID": "@身份证",
+    "issueOrg": "@发证机关",
+    "email": "@邮箱",
+    "bankCardNo": "@银行卡"
+  }
+]

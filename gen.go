@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/bingoohuang/gg/pkg/chinaid"
 	"github.com/bingoohuang/gg/pkg/randx"
 	"github.com/bingoohuang/gg/pkg/timex"
 	"github.com/bingoohuang/gg/pkg/vars"
@@ -25,6 +26,16 @@ var DefaultSubstituteFns = SubstituteFnMap(map[string]SubstitutionFn{
 	"objectId":    func(string) interface{} { return NewObjectID().Hex() },
 	"regex":       Regex,
 	"uuid":        func(_ string) interface{} { return NewUUID().String() },
+
+	"xx":   func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
+	"姓名":   func(_ string) interface{} { return chinaid.Name() },
+	"性别":   func(_ string) interface{} { return chinaid.Sex() },
+	"地址":   func(_ string) interface{} { return chinaid.Address() },
+	"手机":   func(_ string) interface{} { return chinaid.Mobile() },
+	"身份证":  func(_ string) interface{} { return chinaid.ChinaID() },
+	"发证机关": func(_ string) interface{} { return chinaid.IssueOrg() },
+	"邮箱":   func(_ string) interface{} { return chinaid.Email() },
+	"银行卡":  func(_ string) interface{} { return chinaid.BankNo() },
 })
 
 type SubstituteFnMap map[string]SubstitutionFn
