@@ -4,12 +4,13 @@ JJ (get/set json values quickly) provides a [fast](#performance) and [simple](#g
 json document. It has features such as [one line retrieval](#get-a-value), [dot notation paths](#path-syntax)
 , [iteration](#iterate-through-an-object-or-array), and [parsing json lines](#json-lines).
 
-this is a merged version of:
+this is a merged version of: 
 
-1. [tidwall/sjson](https://github.com/tidwall/sjson)
-1. [tidwall/gjson](https://github.com/tidwall/gjson)
-1. [tidwall/pjson](https://github.com/tidwall/pjson)
-1. [tidwall/jj](https://github.com/tidwall/jj)
+1. [tidwall/pretty](https://github.com/tidwall/pretty)
+2. [tidwall/sjson](https://github.com/tidwall/sjson)
+3. [tidwall/gjson](https://github.com/tidwall/gjson)
+4. [tidwall/pjson](https://github.com/tidwall/pjson)
+5. [tidwall/jj](https://github.com/tidwall/jj)
 
 with extensions:
 
@@ -265,11 +266,12 @@ nil, for JSON null
 To directly access the value:
 
 ```go
-result.Type // can be String, Number, True, False, Null, or JSON
-result.Str  // holds the string
-result.Num   // holds the float64 number
-result.Raw   // holds the raw json
-result.Index // index of raw value in original json, zero means index unknown
+result.Type    // can be String, Number, True, False, Null, or JSON
+result.Str     // holds the string
+result.Num     // holds the float64 number
+result.Raw     // holds the raw json
+result.Index   // index of raw value in original json, zero means index unknown
+result.Indexes // indexes of all the elements that match on a path containing the '#' query character.
 ```
 
 There are a variety of handy functions that work on a result:

@@ -2,7 +2,7 @@ package jj
 
 import (
 	jsongo "encoding/json"
-	"reflect"
+	"sort"
 	"strconv"
 	"unsafe"
 )
@@ -41,12 +41,21 @@ type pathResult struct {
 	more  bool   // there is more path to parse
 }
 
-func parsePath(path string, sc setConfig) (pathResult, error) {
+func isSimpleChar(ch byte) bool {
+	switch ch {
+	case '|', '#', '@', '*', '?':
+		return false
+	default:
+		return true
+	}
+}
+
+func parsePath(path string, sc setConfig) (res pathResult, simple bool) {
 	var r pathResult
 	if sc.RawPath {
 		r.part = path
 		r.gpart = path
-		return r, nil
+		return r, true
 	}
 
 	if len(path) > 0 && path[0] == ':' {
@@ -59,12 +68,10 @@ func parsePath(path string, sc setConfig) (pathResult, error) {
 			r.gpart = path[:i]
 			r.path = path[i+1:]
 			r.more = true
-			return r, nil
+			return r, true
 		}
-		if path[i] == '*' || path[i] == '?' {
-			return r, &errorType{"wildcard characters not allowed in path"}
-		} else if path[i] == '#' {
-			return r, &errorType{"array access character not allowed in path"}
+		if !isSimpleChar(path[i]) {
+			return r, false
 		}
 		if path[i] == '\\' {
 			// go into escape mode. this is a slower path that
@@ -90,15 +97,9 @@ func parsePath(path string, sc setConfig) (pathResult, error) {
 						r.gpart = string(gpart)
 						r.path = path[i+1:]
 						r.more = true
-						return r, nil
-					} else if path[i] == '*' || path[i] == '?' {
-						return r, &errorType{
-							"wildcard characters not allowed in path",
-						}
-					} else if path[i] == '#' {
-						return r, &errorType{
-							"array access character not allowed in path",
-						}
+						return r, true
+					} else if !isSimpleChar(path[i]) {
+						return r, false
 					}
 					epart = append(epart, path[i])
 					gpart = append(gpart, path[i])
@@ -107,12 +108,12 @@ func parsePath(path string, sc setConfig) (pathResult, error) {
 			// append the last part
 			r.part = string(epart)
 			r.gpart = string(gpart)
-			return r, nil
+			return r, true
 		}
 	}
 	r.part = path
 	r.gpart = path
-	return r, nil
+	return r, true
 }
 
 func mustMarshalString(s string) bool {
@@ -346,8 +347,7 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, sc 
 			} else {
 				return nil, &errorType{
 					"cannot set array element for non-numeric key '" +
-						paths[0].part + "'",
-				}
+						paths[0].part + "'"}
 			}
 		}
 		if appendit {
@@ -454,10 +454,8 @@ func set(jstr, path, raw string, sc setConfig) ([]byte, error) {
 			}
 			if sc.inplace && sz <= len(jstr) {
 				if !sc.stringify || !mustMarshalString(raw) {
-					jsonh := *(*reflect.StringHeader)(unsafe.Pointer(&jstr))
-					jsonbh := reflect.SliceHeader{
-						Data: jsonh.Data, Len: jsonh.Len, Cap: jsonh.Len,
-					}
+					jsonh := *(*stringHeader)(unsafe.Pointer(&jstr))
+					jsonbh := sliceHeader{data: jsonh.data, len: jsonh.len, cap: jsonh.len}
 					jbytes := *(*[]byte)(unsafe.Pointer(&jsonbh))
 					if sc.stringify {
 						jbytes[res.Index] = '"'
@@ -472,7 +470,7 @@ func set(jstr, path, raw string, sc setConfig) ([]byte, error) {
 					}
 					return jbytes[:sz], nil
 				}
-				return nil, nil
+				return []byte(jstr), nil
 			}
 			buf := make([]byte, 0, sz)
 			buf = append(buf, jstr[:res.Index]...)
@@ -485,32 +483,86 @@ func set(jstr, path, raw string, sc setConfig) ([]byte, error) {
 			return buf, nil
 		}
 	}
-	// parse the path, make sure that it does not contain invalid characters
-	// such as '#', '?', '*'
-	paths := make([]pathResult, 0, 4)
-	r, err := parsePath(path, sc)
-	if err != nil {
-		return nil, err
-	}
-	paths = append(paths, r)
-	for r.more {
-		if r, err = parsePath(r.path, sc); err != nil {
-			return nil, err
-		}
+	var paths []pathResult
+	r, simple := parsePath(path, sc)
+	if simple {
 		paths = append(paths, r)
+		for r.more {
+			r, simple = parsePath(r.path, sc)
+			if !simple {
+				break
+			}
+			paths = append(paths, r)
+		}
 	}
-
+	if !simple {
+		if sc.del {
+			return []byte(jstr),
+				&errorType{"cannot delete value from a complex path"}
+		}
+		return setComplexPath(jstr, path, raw, sc.stringify)
+	}
 	njson, err := appendRawPaths(nil, jstr, paths, raw, sc)
 	if err != nil {
-		return nil, err
+		return []byte(jstr), err
 	}
 	return njson, nil
+}
+
+func setComplexPath(jstr, path, raw string, stringify bool) ([]byte, error) {
+	res := Get(jstr, path)
+	if !res.Exists() || !(res.Index != 0 || len(res.Indexes) != 0) {
+		return []byte(jstr), errNoChange
+	}
+	if res.Index != 0 {
+		njson := []byte(jstr[:res.Index])
+		if stringify {
+			njson = appendStringify(njson, raw)
+		} else {
+			njson = append(njson, raw...)
+		}
+		njson = append(njson, jstr[res.Index+len(res.Raw):]...)
+		jstr = string(njson)
+	}
+	if len(res.Indexes) > 0 {
+		type val struct {
+			index int
+			res   Result
+		}
+		vals := make([]val, 0, len(res.Indexes))
+		res.ForEach(func(_, vres Result) bool {
+			vals = append(vals, val{res: vres})
+			return true
+		})
+		if len(res.Indexes) != len(vals) {
+			return []byte(jstr), errNoChange
+		}
+		for i := 0; i < len(res.Indexes); i++ {
+			vals[i].index = res.Indexes[i]
+		}
+		sort.SliceStable(vals, func(i, j int) bool {
+			return vals[i].index > vals[j].index
+		})
+		for _, val := range vals {
+			vres := val.res
+			index := val.index
+			njson := []byte(jstr[:index])
+			if stringify {
+				njson = appendStringify(njson, raw)
+			} else {
+				njson = append(njson, raw...)
+			}
+			njson = append(njson, jstr[index+len(vres.Raw):]...)
+			jstr = string(njson)
+		}
+	}
+	return []byte(jstr), nil
 }
 
 // Set sets a json value for the specified path.
 // A path is in dot syntax, such as "name.last" or "age".
 // This function expects that the json is well-formed, and does not validate.
-// Invalid json will not panic, but it may return back unexpected results.
+// Invalid json will not panic, but it may return unexpected results.
 // An error is returned if the path is not valid.
 //
 // A path is a series of keys separated by a dot.
@@ -537,8 +589,8 @@ func Set(json, path string, value interface{}, options ...SetOptions) (string, e
 		// copy the Options and set options.ReplaceInPlace to false.
 		opts.ReplaceInPlace = false
 	}
-	jsonh := *(*reflect.StringHeader)(unsafe.Pointer(&json))
-	jsonbh := reflect.SliceHeader{Data: jsonh.Data, Len: jsonh.Len}
+	jsonh := *(*stringHeader)(unsafe.Pointer(&json))
+	jsonbh := sliceHeader{data: jsonh.data, len: jsonh.len, cap: jsonh.len}
 	jsonb := *(*[]byte)(unsafe.Pointer(&jsonbh))
 	res, err := SetBytes(jsonb, path, value, opts)
 	return string(res), err

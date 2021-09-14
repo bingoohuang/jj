@@ -7,47 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	tssert "github.com/stretchr/testify/assert"
 )
 
 func TestSetPathAsSingleKey(t *testing.T) {
 	s, _ := Set(`{"a.b.c":"abc"}`, "a.b.c", "efg", SetOptions{PathOption: PathOption{RawPath: true}})
-	assert.Equal(t, `{"a.b.c":"efg"}`, s)
+	tssert.Equal(t, `{"a.b.c":"efg"}`, s)
 
 	s, _ = Delete(`{"a.b.c":"abc","age": 100}`, "a.b.c", SetOptions{PathOption: PathOption{RawPath: true}})
-	assert.Equal(t, `{"age": 100}`, s)
-}
-
-func TestInvalidPaths(t *testing.T) {
-	var err error
-	_, err = SetRaw(`{"hello":"world"}`, "", `"planet"`)
-	if err == nil || err.Error() != "path cannot be empty" {
-		t.Fatalf("expecting '%v', got '%v'", "path cannot be empty", err)
-	}
-	_, err = SetRaw("", "name.last.#", "")
-	if err == nil || err.Error() != "array access character not allowed in path" {
-		t.Fatalf("expecting '%v', got '%v'", "array access character not allowed in path", err)
-	}
-	_, err = SetRaw("", "name.last.\\1#", "")
-	if err == nil || err.Error() != "array access character not allowed in path" {
-		t.Fatalf("expecting '%v', got '%v'", "array access character not allowed in path", err)
-	}
-	_, err = SetRaw("", "name.las?t", "")
-	if err == nil || err.Error() != "wildcard characters not allowed in path" {
-		t.Fatalf("expecting '%v', got '%v'", "wildcard characters not allowed in path", err)
-	}
-	_, err = SetRaw("", "name.la\\s?t", "")
-	if err == nil || err.Error() != "wildcard characters not allowed in path" {
-		t.Fatalf("expecting '%v', got '%v'", "wildcard characters not allowed in path", err)
-	}
-	_, err = SetRaw("", "name.las*t", "")
-	if err == nil || err.Error() != "wildcard characters not allowed in path" {
-		t.Fatalf("expecting '%v', got '%v'", "wildcard characters not allowed in path", err)
-	}
-	_, err = SetRaw("", "name.las\\a*t", "")
-	if err == nil || err.Error() != "wildcard characters not allowed in path" {
-		t.Fatalf("expecting '%v', got '%v'", "wildcard characters not allowed in path", err)
-	}
+	tssert.Equal(t, `{"age": 100}`, s)
 }
 
 const (
@@ -332,5 +300,40 @@ func TestIssue36(t *testing.T) {
 	res := Get(json, "aggs.sample").String()
 	if res != "hello" {
 		t.Fatal("unexpected result")
+	}
+}
+
+var example = `
+{
+	"name": {"first": "Tom", "last": "Anderson"},
+	"age":37,
+	"children": ["Sara","Alex","Jack"],
+	"fav.movie": "Deer Hunter",
+	"friends": [
+	  {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+	  {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+	  {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+	]
+  }
+  `
+
+func TestIndex(t *testing.T) {
+	path := `friends.#(last="Murphy").last`
+	json, err := Set(example, path, "Johnson")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if Get(json, "friends.#.last").String() != `["Johnson","Craig","Murphy"]` {
+		t.Fatal("mismatch")
+	}
+}
+func TestIndexes2(t *testing.T) {
+	path := `friends.#(last="Murphy")#.last`
+	json, err := Set(example, path, "Johnson")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if Get(json, "friends.#.last").String() != `["Johnson","Craig","Johnson"]` {
+		t.Fatal("mismatch")
 	}
 }

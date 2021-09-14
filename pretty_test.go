@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -422,6 +423,44 @@ func BenchmarkUglyInPlace(t *testing.B) {
 	}
 }
 
+var example3 = []byte(`
+{
+  /* COMMENT 1 */
+	"name": {
+		"last": "Sanders", // outer 1
+		"first": "Janet",  // outer 2
+	}, 
+  // COMMENT 2
+	"children": [
+		"Andy", "Carol", "Mike", // outer 3
+	],
+  /* 
+  COMMENT 3
+  */
+	"values": [
+		10.10, true, false, null, "hello", {},
+	],
+	"values2": {},
+	"values3": [],
+	"deep": {"deep":{"deep":[1,2,3,4,5,],}}
+}
+`)
+
+func BenchmarkSpec(t *testing.B) {
+	t.ReportAllocs()
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		Ugly(example3)
+	}
+}
+func BenchmarkSpecInPlace(t *testing.B) {
+	example4 := []byte(string(example3))
+	t.ReportAllocs()
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		UglyInPlace(example4)
+	}
+}
 func BenchmarkJSONIndent(t *testing.B) {
 	var dst bytes.Buffer
 	t.ReportAllocs()
@@ -437,5 +476,90 @@ func BenchmarkJSONCompact(t *testing.B) {
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		_ = json.Compact(&dst, example1)
+	}
+}
+func TestPrettyNoSpaceAfterNewline(t *testing.T) {
+	json := `[{"foo":1,"bar":2},{"foo":3,"bar":4}]`
+	json = string(Pretty([]byte(json)))
+	if strings.Index(json, " \n") != -1 {
+		t.Fatal("found a space followed by a newline, which should not be allowed")
+	}
+}
+func TestPrettyStableSort(t *testing.T) {
+	json := `{"c":3,"b":3,"a":3,"c":2,"b":2,"a":2,"c":1,"b":1,"a":1}`
+	opts := DefaultOptions
+	opts.SortKeys = true
+	json = string(Ugly(Pretty([]byte(json), opts)))
+	if json != `{"a":1,"a":2,"a":3,"b":1,"b":2,"b":3,"c":1,"c":2,"c":3}` {
+		t.Fatal("out of order")
+	}
+}
+func TestPrettyColor(t *testing.T) {
+	json := `"abc\u0020def\nghi"`
+	ret := string(Color([]byte(json), nil))
+	exp := "" +
+		TerminalStyle.String[0] + `"abc` + TerminalStyle.String[1] +
+		TerminalStyle.Escape[0] + `\u0020` + TerminalStyle.Escape[1] +
+		TerminalStyle.String[0] + `def` + TerminalStyle.String[1] +
+		TerminalStyle.Escape[0] + `\n` + TerminalStyle.Escape[1] +
+		TerminalStyle.String[0] + `ghi"` + TerminalStyle.String[1]
+	if ret != exp {
+		t.Fatalf("expected '%s', got '%s'", exp, ret)
+	}
+}
+func TestSpec(t *testing.T) {
+	json := `
+  {  //	hello
+    "c": 3,"b":3, // jello
+    /* SOME
+       LIKE
+       IT
+       HAUT */
+    "d": [ 1, /* 2 */ 3, 4, ],
+  }`
+	expect := `
+  {    	     
+    "c": 3,"b":3,         
+           
+           
+         
+              
+    "d": [ 1,         3, 4  ] 
+  }`
+	out := string(Spec([]byte(json)))
+	if out != expect {
+		t.Fatalf("expected '%s', got '%s'", expect, out)
+	}
+	out = string(SpecInPlace([]byte(json)))
+	if out != expect {
+		t.Fatalf("expected '%s', got '%s'", expect, out)
+	}
+}
+func TestStableSort10(t *testing.T) {
+	expect := `{"key":"abc","key":"bbb","key":"rrr","key":"value","key3":3}`
+	jsons := []string{
+		`{"key3":3,"key":"abc","key":"value","key":"rrr","key":"bbb"}`,
+		`{"key":"abc","key":"bbb","key":"value","key3":3,"key":"rrr"}`,
+		`{"key":"bbb","key":"value","key":"rrr","key3":3,"key":"abc"}`,
+		`{"key3":3,"key":"abc","key":"bbb","key":"value","key":"rrr"}`,
+		`{"key3":3,"key":"abc","key":"bbb","key":"value","key":"rrr"}`,
+	}
+	opts := DefaultOptions
+	opts.SortKeys = true
+	for _, json := range jsons {
+		json = string(Ugly(Pretty([]byte(json), opts)))
+		if json != expect {
+			t.Fatalf("expected '%s', got '%s'", expect, json)
+		}
+	}
+}
+func TestNaN(t *testing.T) {
+	vals := []string{"NaN", "nan", "Nan", "nAn", "inf", "Inf", "-inf", "+Inf"}
+	for _, val := range vals {
+		json := `{"num":` + val + `}`
+		res := string(Ugly(Pretty([]byte(json))))
+		if res != json {
+			t.Fatalf("expected '%s', got '%s'", json, res)
+		}
 	}
 }

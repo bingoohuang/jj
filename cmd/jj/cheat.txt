@@ -47,7 +47,7 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
   "bar": "ipsum"
 }
 26. The `-u` flag will compress the json into the fewest characters possible by squashing newlines and spaces.
-27. $ echo '{"id":"@objectId", "sex":"@random(male,female)"}' | jj -g -u   => {"id":"60bcc2775555280f79cb02d2","sex":"male"}
-28. $ echo '["|2", {"id":"@objectId", "sex":"@random(male,female)"}]' | jj -g -u => [{"id":"60bcc26c6fbe0704ed2636cd","sex":"male"},{"id":"60bcc26c6fbe0704ed2636ce","sex":"female"}]
-29. $ echo '{"id":"@objectId", "sex":"@random(male,female)", "age":"@random_int(20-60)", "day":"@random_time(yyyy-MM-dd)", "valid":"@random_bool", "email":"@regex([a-z]{5}@xyz[.]cn)"}' | jj -g -u
+27. $ echo '{"id":"@objectId", "sex":"@random(male,female)"}' | jj -gu   => {"id":"60bcc2775555280f79cb02d2","sex":"male"}
+28. $ echo '["|2", {"id":"@objectId", "sex":"@random(male,female)"}]' | jj -gu => [{"id":"60bcc26c6fbe0704ed2636cd","sex":"male"},{"id":"60bcc26c6fbe0704ed2636ce","sex":"female"}]
+29. $ echo '{"id":"@objectId", "sex":"@random(male,female)", "age":"@random_int(20-60)", "day":"@random_time(yyyy-MM-dd)", "valid":"@random_bool", "email":"@regex([a-z]{5}@xyz[.]cn)"}' | jj -gu
 {"id":"60bcc4511995718d01d90be5","sex":"female","age":42,"day":"2021-06-06","valid":false,"email":"vubxv@xyz.cn"}
