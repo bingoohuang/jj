@@ -617,8 +617,8 @@ func Color(src []byte, style *Style) []byte {
 // Spec strips out comments and trailing commas and convert the input to a
 // valid JSON per the official spec: https://tools.ietf.org/html/rfc8259
 //
-// The resulting JSON will always be the same length as the input and it will
-// include all of the same line breaks at matching offsets. This is to ensure
+// The resulting JSON will always be the same length as the input, and it will
+// include all the same line breaks at matching offsets. This is to ensure
 // the result can be later processed by a external parser and that that
 // parser will report messages or errors with the correct offsets.
 func Spec(src []byte) []byte {
@@ -630,6 +630,7 @@ func Spec(src []byte) []byte {
 func SpecInPlace(src []byte) []byte {
 	return spec(src, src)
 }
+
 func spec(src, dst []byte) []byte {
 	dst = dst[:0]
 	for i := 0; i < len(src); i++ {
