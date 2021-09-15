@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"fmt"
+	"github.com/antonmedv/expr"
 	"github.com/bingoohuang/jj"
-	isatty "github.com/mattn/go-isatty"
+	"github.com/mattn/go-isatty"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -32,6 +34,7 @@ options:
      -l         Output array values on multiple lines
      -i infile  Use input file instead of stdin
      -g         Generate random JSON by input
+     -e         Eval keypath value as an expression
      -o outfile Use modifyOutput file instead of stdout
      -k keypath JSON key path (like "name.last")
      -K keypath JSON key path as raw whole key
@@ -39,19 +42,12 @@ options:
 )
 
 type args struct {
-	infile    *string
-	outfile   *string
-	value     *string
-	raw       bool
-	del       bool
-	opt       bool
-	keypathok bool
-	keypath   string
-	ugly      bool
-	notty     bool
-	lines     bool
-	rawKey    bool
-	gen       bool
+	infile, outfile, value *string
+
+	keypath string
+
+	raw, del, opt, keypathok              bool
+	ugly, notty, lines, rawKey, gen, expr bool
 }
 
 func parseArgs() args {
@@ -98,6 +94,8 @@ func parseArgs() args {
 						a.lines = true
 					case 'g':
 						a.gen = true
+					case 'e':
+						a.expr = true
 					}
 				}
 				continue
@@ -139,15 +137,17 @@ func parseArgs() args {
 	return a
 }
 
-var Reset = "\033[0m"
-var Red = "\033[31m"
-var Green = "\033[32m"
-var Yellow = "\033[33m"
-var Blue = "\033[34m"
-var Purple = "\033[35m"
-var Cyan = "\033[36m"
-var Gray = "\033[37m"
-var White = "\033[97m"
+var (
+	Reset  = "\033[0m"
+	Red    = "\033[31m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Blue   = "\033[34m"
+	Purple = "\033[35m"
+	Cyan   = "\033[36m"
+	Gray   = "\033[37m"
+	White  = "\033[97m"
+)
 
 func init() {
 	if runtime.GOOS == "windows" {
@@ -247,11 +247,9 @@ func (a args) createOut(outChan chan Out) {
 		}
 
 		var out Out
-		if raw {
-			// set as raw block
+		if raw { // set as raw block
 			out.Data, err = jj.SetRawBytes(input, a.keypath, []byte(val), opts)
-		} else {
-			// set as a string
+		} else { // set as a string
 			out.Data, err = jj.SetBytes(input, a.keypath, val, opts)
 		}
 		if err != nil {
@@ -266,20 +264,43 @@ func (a args) createOut(outChan chan Out) {
 	var out Out
 	if !a.keypathok {
 		out.Data = input
+	} else if a.expr {
+		env := map[string]interface{}{}
+		if err := json.Unmarshal(input, &env); err != nil {
+			panic(err)
+		}
+		program, err := expr.Compile(a.keypath, expr.Env(env))
+		if err != nil {
+			panic(err)
+		}
+
+		output, err := expr.Run(program, env)
+		if err != nil {
+			panic(err)
+		}
+		v, err := json.Marshal(output)
+		if err != nil {
+			fail(err)
+		}
+		a.assignOut(&out, jj.ParseBytes(v))
 	} else {
 		res := jj.GetBytes(input, a.keypath, jj.WithRawPath(a.rawKey))
-		if a.raw {
-			out.Data = []byte(res.Raw)
-		} else {
-			out.Type = res.Type
-			out.IsArray = res.IsArray()
-			out.Data = []byte(res.String())
-		}
+		a.assignOut(&out, res)
 	}
 
 	outChan <- out
 	close(outChan)
 	return
+}
+
+func (a args) assignOut(out *Out, res jj.Result) {
+	if a.raw {
+		out.Data = []byte(res.Raw)
+	} else {
+		out.Type = res.Type
+		out.IsArray = res.IsArray()
+		out.Data = []byte(res.String())
+	}
 }
 
 func (a args) generate(outChan chan Out, input []byte) chan Out {

@@ -44,6 +44,11 @@ var example1 = []byte(`
 
 var example2 = `[ 0, 10, 10.10, true, false, null, "hello \" "]`
 
+func assertNil(t *testing.T, a interface{}) {
+	if a != nil {
+		t.Fatalf("%v is not nil", a)
+	}
+}
 func assertEqual(t *testing.T, a, b interface{}) {
 	t.Helper()
 	if !reflect.DeepEqual(a, b) {

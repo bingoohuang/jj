@@ -51,3 +51,9 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 28. $ echo '["|2", {"id":"@objectId", "sex":"@random(male,female)"}]' | jj -gu => [{"id":"60bcc26c6fbe0704ed2636cd","sex":"male"},{"id":"60bcc26c6fbe0704ed2636ce","sex":"female"}]
 29. $ echo '{"id":"@objectId", "sex":"@random(male,female)", "age":"@random_int(20-60)", "day":"@random_time(yyyy-MM-dd)", "valid":"@random_bool", "email":"@regex([a-z]{5}@xyz[.]cn)"}' | jj -gu
 {"id":"60bcc4511995718d01d90be5","sex":"female","age":42,"day":"2021-06-06","valid":false,"email":"vubxv@xyz.cn"}
+30. $ echo '{"name":"Tom","age":18}' | jj -e 'age==18 and name=="Tom"'                       => true
+31. $ echo '{"name":"Tom","age":19}' | jj -e 'age==18 and name=="Tom"'                       => false
+32. $ echo '{"name":"Tom","age":19}' | jj -e 'age==18 or name=="Tom"'                        => true
+33. $ echo '{"name":{"first":"Tom","age":18}}' | jj -e '"Hello:" + name.first'               => Hello:Tom
+34. $ echo '{"name":{"first":"Tom","age":18}}' | jj -e 'name.first=="Tom" and name.age == 18'  => true
+     more expression syntax, go https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
