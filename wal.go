@@ -461,6 +461,24 @@ func (l *WalLog) writeBatch(b *Batch) error {
 	return nil
 }
 
+// Index returns the index of the first and last entry in the log. Returns 0 when no entries.
+func (l *WalLog) Index() (firstIndex, lastIndex uint64, err error) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	if l.corrupt {
+		return 0, 0, ErrCorrupt
+	} else if l.closed {
+		return 0, 0, ErrClosed
+	}
+	// We check the lastIndex for zero because the firstIndex is always one or
+	// more, even when there's no entries
+	if l.lastIndex > 0 {
+		firstIndex = l.firstIndex
+	}
+
+	return firstIndex, l.lastIndex, nil
+}
+
 // FirstIndex returns the index of the first entry in the log. Returns 0 when no entries.
 func (l *WalLog) FirstIndex() (index uint64, err error) {
 	l.mu.RLock()
@@ -487,9 +505,7 @@ func (l *WalLog) LastIndex() (index uint64, err error) {
 	} else if l.closed {
 		return 0, ErrClosed
 	}
-	if l.lastIndex == 0 {
-		return 0, nil
-	}
+
 	return l.lastIndex, nil
 }
 
