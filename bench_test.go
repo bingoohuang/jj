@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bingoohuang/gg/pkg/jsoni"
 	"github.com/buger/jsonparser"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/mailru/easyjson/jlexer"
 	fflib "github.com/pquerna/ffjson/fflib/v1"
 )
@@ -401,7 +401,7 @@ func BenchmarkJSONParserGet(t *testing.B) {
 	}
 }
 
-func jsoniterWindowName(t *testing.B, iter *jsoniter.Iterator) {
+func jsoniterWindowName(t *testing.B, iter *jsoni.Iterator) {
 	var v string
 	for {
 		key := iter.ReadObject()
@@ -425,7 +425,7 @@ func jsoniterWindowName(t *testing.B, iter *jsoniter.Iterator) {
 	}
 }
 
-func jsoniterTextOnMouseUp(t *testing.B, iter *jsoniter.Iterator) {
+func jsoniterTextOnMouseUp(t *testing.B, iter *jsoni.Iterator) {
 	var v string
 	for {
 		key := iter.ReadObject()
@@ -449,7 +449,7 @@ func jsoniterTextOnMouseUp(t *testing.B, iter *jsoniter.Iterator) {
 	}
 }
 
-func jsoniterImageOffset(t *testing.B, iter *jsoniter.Iterator) {
+func jsoniterImageOffset(t *testing.B, iter *jsoni.Iterator) {
 	var v int
 	for {
 		key := iter.ReadObject()
@@ -473,7 +473,7 @@ func jsoniterImageOffset(t *testing.B, iter *jsoniter.Iterator) {
 	}
 }
 
-func jsoniterWidget(t *testing.B, iter *jsoniter.Iterator, j int) {
+func jsoniterWidget(t *testing.B, iter *jsoni.Iterator, j int) {
 	for {
 		key := iter.ReadObject()
 		if key != "widget" {
@@ -497,7 +497,7 @@ func BenchmarkJSONIterator(t *testing.B) {
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		for j := 0; j < len(benchPaths); j++ {
-			iter := jsoniter.ParseString(jsoniter.ConfigDefault, exampleJSON)
+			iter := jsoni.ParseString(jsoni.ConfigDefault, exampleJSON)
 			jsoniterWidget(t, iter, j)
 		}
 	}
