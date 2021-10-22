@@ -48,6 +48,8 @@ type args struct {
 
 	raw, del, opt, keypathok              bool
 	ugly, notty, lines, rawKey, gen, expr bool
+
+	jsonMap map[string]interface{}
 }
 
 func parseArgs() args {
@@ -68,6 +70,8 @@ func parseArgs() args {
 	}
 
 	var a args
+	a.jsonMap = make(map[string]interface{})
+
 	for i := 1; i < len(os.Args); i++ {
 		switch os.Args[i] {
 		default:
@@ -100,7 +104,13 @@ func parseArgs() args {
 				}
 				continue
 			}
-			if !a.keypathok {
+			if p1 := strings.Index(os.Args[i], ":="); p1 > 0 {
+				// Raw JSON fields
+				a.jsonMap[os.Args[i][:p1]] = json.RawMessage(os.Args[i][p1+2:])
+			} else if p2 := strings.Index(os.Args[i], "="); p2 > 0 {
+				// Json fields
+				a.jsonMap[os.Args[i][:p2]] = os.Args[i][p2+1:]
+			} else if !a.keypathok {
 				a.keypathok = true
 				a.keypath = os.Args[i]
 			} else {
@@ -202,7 +212,13 @@ type Out struct {
 }
 
 func (a args) createOut(outChan chan Out) {
-	input, err := createInput(a)
+	var input []byte
+	var err error
+	if len(a.jsonMap) > 0 {
+		input, err = json.Marshal(a.jsonMap)
+	} else {
+		input, err = createInput(a)
+	}
 	if err != nil {
 		fail(err)
 	}
