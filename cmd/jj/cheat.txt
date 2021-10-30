@@ -1,4 +1,5 @@
-a. create a json        $ jj name=bingoo age:=100 -u    => {"age":100,"name":"bingoo"}
+b. Create a random json: $ jj -Ru => {"unapproving":true,"neet":false,"exhale":20.03,"septum":null,"hygeist":"squareness"}
+a. Create json by cli:  $ jj name=bingoo age:=100 -u    => {"age":100,"name":"bingoo"}
 1. Get a string:        $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name.last    => Smith
 2. Get a block of JSON: $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name         => {"first":"Tom","last":"Smith"}
 3. Get a non-existent : $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name.middle  => null
