@@ -2,41 +2,114 @@ package jj
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/bingoohuang/gg/pkg/chinaid"
-	"github.com/bingoohuang/gg/pkg/randx"
-	"github.com/bingoohuang/gg/pkg/timex"
-	"github.com/bingoohuang/gg/pkg/vars"
-	"github.com/bingoohuang/jj/reggen"
 	"io"
 	"log"
+	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/Pallinder/go-randomdata"
+	"github.com/bingoohuang/gg/pkg/chinaid"
+	"github.com/bingoohuang/gg/pkg/randx"
+	"github.com/bingoohuang/gg/pkg/ss"
+	"github.com/bingoohuang/gg/pkg/timex"
+	"github.com/bingoohuang/gg/pkg/uid"
+	"github.com/bingoohuang/gg/pkg/vars"
+	"github.com/bingoohuang/jj/reggen"
 )
 
 var DefaultSubstituteFns = SubstituteFnMap(map[string]SubstitutionFn{
-	"random":      Random,
-	"random_int":  RandomInt,
-	"random_bool": func(_ string) interface{} { return randx.Bool() },
-	"random_time": RandomTime,
-	"objectId":    func(string) interface{} { return NewObjectID().Hex() },
-	"regex":       Regex,
-	"uuid":        func(_ string) interface{} { return NewUUID().String() },
-
-	"xx":   func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
-	"姓名":   func(_ string) interface{} { return chinaid.Name() },
-	"性别":   func(_ string) interface{} { return chinaid.Sex() },
-	"地址":   func(_ string) interface{} { return chinaid.Address() },
-	"手机":   func(_ string) interface{} { return chinaid.Mobile() },
-	"身份证":  func(_ string) interface{} { return chinaid.ChinaID() },
-	"发证机关": func(_ string) interface{} { return chinaid.IssueOrg() },
-	"邮箱":   func(_ string) interface{} { return chinaid.Email() },
-	"银行卡":  func(_ string) interface{} { return chinaid.BankNo() },
+	"random":       Random,
+	"random_int":   RandomInt,
+	"random_bool":  func(_ string) interface{} { return randx.Bool() },
+	"random_time":  RandomTime,
+	"random_image": RandomImage, // @random_image(format=jpg size=640x320)
+	"objectId":     func(string) interface{} { return NewObjectID().Hex() },
+	"regex":        Regex,
+	"uuid":         func(_ string) interface{} { return NewUUID().String() },
+	"base64":       RandomBase64, // @base64(size=1000 std raw)
+	"name":         RandomName,
+	"ksuid":        func(_ string) interface{} { v, _ := uid.NewRandom(); return v.String() },
+	"汉字":           func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
+	"姓名":           func(_ string) interface{} { return chinaid.Name() },
+	"性别":           func(_ string) interface{} { return chinaid.Sex() },
+	"地址":           func(_ string) interface{} { return chinaid.Address() },
+	"手机":           func(_ string) interface{} { return chinaid.Mobile() },
+	"身份证":          func(_ string) interface{} { return chinaid.ChinaID() },
+	"发证机关":         func(_ string) interface{} { return chinaid.IssueOrg() },
+	"邮箱":           func(_ string) interface{} { return chinaid.Email() },
+	"银行卡":          func(_ string) interface{} { return chinaid.BankNo() },
 })
+
+// RandomImage creates a random image.
+// checked on https://codebeautify.org/base64-to-image-converter
+func RandomImage(conf string) interface{} {
+	arg := struct {
+		Format string
+		Size   string
+	}{}
+
+	ParseConf(conf, &arg)
+
+	imgFormat := ""
+	switch strings.ToLower(arg.Format) {
+	case ".jpg", "jpg", ".jpeg", "jpeg":
+		imgFormat = ".jpg"
+	case ".png", "png":
+		imgFormat = ".png"
+	default:
+		imgFormat = ".png"
+	}
+
+	width, height := parseImageSize(arg.Size)
+	c := randx.ImgConfig{
+		Width:      width,
+		Height:     height,
+		RandomText: fmt.Sprintf("%d", randx.Int()),
+		FastMode:   false,
+		PixelSize:  40,
+	}
+
+	data, _ := c.Gen(imgFormat)
+
+	result := ""
+	if imgFormat == ".png" {
+		result += "data:image/jpeg;base64,"
+	} else {
+		result += "data:image/png;base64,"
+	}
+
+	result += base64.StdEncoding.EncodeToString(data)
+	return result
+}
+
+func parseImageSize(val string) (width, height int) {
+	width, height = 640, 320
+	if val != "" {
+		val = strings.ToLower(val)
+		parts := strings.SplitN(val, "x", 2)
+		if len(parts) == 2 {
+			if v := ss.ParseInt(parts[0]); v > 0 {
+				width = v
+			}
+			if v := ss.ParseInt(parts[1]); v > 0 {
+				height = v
+			}
+		}
+	}
+	return width, height
+}
+
+func RandomName(_ string) interface{} {
+	return randomdata.SillyName()
+}
 
 type SubstituteFnMap map[string]SubstitutionFn
 
@@ -378,6 +451,83 @@ func RandomInt(args string) interface{} {
 	return randx.Int64()
 }
 
+var argRegexp = regexp.MustCompile(`([^\s=]+)\s*(?:=\s*(\S+))?`)
+
+func ParseConf(args string, v interface{}) {
+	MapToConf(ParseArguments(args), v)
+}
+
+func ParseArguments(args string) map[string]string {
+	result := make(map[string]string)
+	subs := argRegexp.FindAllStringSubmatch(args, -1)
+	for _, sub := range subs {
+		result[sub[1]] = sub[2]
+	}
+
+	return result
+}
+
+func MapToConf(m map[string]string, v interface{}) {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr {
+		panic("v should be pointer to struct ")
+	}
+	elem := rv.Elem()
+	if elem.Kind() != reflect.Struct {
+		panic("v should be pointer to struct ")
+	}
+	mm := make(map[string]string)
+	for k, v := range m {
+		mm[strings.ToLower(k)] = v
+	}
+
+	t := elem.Type()
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if mv, ok := mm[strings.ToLower(f.Name)]; ok {
+			switch f.Type.Kind() {
+			case reflect.String:
+				elem.Field(i).Set(reflect.ValueOf(mv))
+			case reflect.Bool:
+				b := mv == "" || mv == "true" || mv == "yes" || mv == "1"
+				elem.Field(i).Set(reflect.ValueOf(b))
+			case reflect.Int:
+				b, _ := strconv.Atoi(mv)
+				elem.Field(i).Set(reflect.ValueOf(b))
+			}
+		}
+	}
+}
+
+func RandomBase64(args string) interface{} {
+	arg := struct {
+		Size int
+		Std  bool
+		Url  bool
+		Raw  bool
+	}{}
+
+	ParseConf(args, &arg)
+
+	token := make([]byte, arg.Size)
+	rand.Read(token)
+
+	encoding := base64.StdEncoding
+	if arg.Url {
+		if arg.Raw {
+			encoding = base64.RawURLEncoding
+		} else {
+			encoding = base64.URLEncoding
+		}
+	} else {
+		if arg.Raw {
+			encoding = base64.RawStdEncoding
+		}
+	}
+
+	return encoding.EncodeToString(token)
+}
+
 func Random(args string) interface{} {
 	if args == "" {
 		return randx.String(10)
@@ -419,8 +569,10 @@ func Regex(args string) interface{} {
 // ObjectID is the BSON ObjectID type.
 type ObjectID [12]byte
 
-var objectIDCounter = readRandomUint32()
-var processUnique = processUniqueBytes()
+var (
+	objectIDCounter = readRandomUint32()
+	processUnique   = processUniqueBytes()
+)
 
 // NewObjectID generates a new ObjectID.
 func NewObjectID() ObjectID {
@@ -508,8 +660,10 @@ func encodeHex(dst []byte, uuid UUID) {
 	hex.Encode(dst[24:], uuid[10:])
 }
 
-var rander = rand.Reader // random function
-var Nil UUID             // empty UUID, all zeros
+var (
+	rander = rand.Reader // random function
+	Nil    UUID          // empty UUID, all zeros
+)
 
 // A UUID is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
 type UUID [16]byte

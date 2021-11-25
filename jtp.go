@@ -17,10 +17,8 @@ const (
 	stringValueLength    = "maxStringLenReached"
 )
 
-var (
-	// ErrInvalidJSON denotes JSON is Malformed.
-	ErrInvalidJSON = errors.New("jtp.MalformedJSON")
-)
+// ErrInvalidJSON denotes JSON is Malformed.
+var ErrInvalidJSON = errors.New("jtp.MalformedJSON")
 
 // Verifier is the interface that wraps the basic
 // VerifyBytes and VerifyString methods.

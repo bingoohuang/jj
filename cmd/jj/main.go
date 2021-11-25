@@ -5,14 +5,15 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/antonmedv/expr"
-	"github.com/bingoohuang/jj"
-	"github.com/mattn/go-isatty"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/antonmedv/expr"
+	"github.com/bingoohuang/jj"
+	"github.com/mattn/go-isatty"
 )
 
 var (

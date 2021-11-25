@@ -112,6 +112,7 @@ func appendRandAny(dst []byte, rng *rand.Rand, nested bool, s, t, d int) []byte 
 	}
 	return dst
 }
+
 func appendRandObject(dst []byte, rng *rand.Rand, s, t, d int) []byte {
 	dst = append(dst, '{')
 	for i := 0; i < d; i++ {

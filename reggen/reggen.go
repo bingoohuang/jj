@@ -10,8 +10,10 @@ import (
 	"time"
 )
 
-const runeRangeEnd = 0x10ffff
-const printableChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r"
+const (
+	runeRangeEnd   = 0x10ffff
+	printableChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r"
+)
 
 var printableCharsNoNL = printableChars[:len(printableChars)-2]
 
@@ -26,7 +28,7 @@ type Generator struct {
 }
 
 func (g *Generator) generate(s *state, re *syntax.Regexp) string {
-	//fmt.Println("re:", re, "sub:", re.Sub)
+	// fmt.Println("re:", re, "sub:", re.Sub)
 	op := re.Op
 	switch op {
 	case syntax.OpNoMatch:
@@ -56,7 +58,7 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 			possibleChars := []uint8{}
 			for j := 0; j < len(printableChars); j++ {
 				c := printableChars[j]
-				//fmt.Printf("Char %c %d\n", c, c)
+				// fmt.Printf("Char %c %d\n", c, c)
 				// Check c in range
 				for i := 0; i < len(re.Rune); i += 2 {
 					if rune(c) >= re.Rune[i] && rune(c) <= re.Rune[i+1] {
@@ -65,7 +67,7 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 					}
 				}
 			}
-			//fmt.Println("Possible chars: ", possibleChars)
+			// fmt.Println("Possible chars: ", possibleChars)
 			if len(possibleChars) > 0 {
 				c := possibleChars[g.rand.Intn(len(possibleChars))]
 				if g.debug {
@@ -194,7 +196,7 @@ func NewGenerator(regex string) (*Generator, error) {
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println("Compiled re ", re)
+	// fmt.Println("Compiled re ", re)
 	return &Generator{
 		re:   re,
 		rand: rand.New(rand.NewSource(time.Now().UnixNano())),

@@ -2,9 +2,10 @@ package jj_test
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/bingoohuang/jj"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGenKeyHitRepeat(t *testing.T) {
@@ -75,4 +76,32 @@ func TestGenExample(t *testing.T) {
 	fmt.Println(jj.Gen(`{"day": "@random_time(yyyy-MM-dd,1990-01-01,2021-06-06)"}`))       // {"day":"1996-06-04"}
 	fmt.Println(jj.Gen(`{"day": "@random_time(sep=# yyyy-MM-dd#1990-01-01#2021-06-06)"}`)) // {"day":"1995-08-23"}
 	fmt.Println(jj.Gen(`{"uid": "@uuid"}`))                                                // {"uid":"619f3117-3c76-4b3f-941c-7df2a109b625"}
+}
+
+func TestParseArguments(t *testing.T) {
+	assert.Equal(t, map[string]string{
+		"size": "10",
+		"std":  "",
+		"url":  "",
+		"raw":  "",
+	}, jj.ParseArguments("size=10 std url raw"))
+
+	arg := struct {
+		Size int
+		Std  bool
+		Url  bool
+		Raw  bool
+	}{}
+	jj.ParseConf("size=10 std url", &arg)
+	assert.Equal(t, struct {
+		Size int
+		Std  bool
+		Url  bool
+		Raw  bool
+	}{
+		Size: 10,
+		Std:  true,
+		Url:  true,
+		Raw:  false,
+	}, arg)
 }

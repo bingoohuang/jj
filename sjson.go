@@ -347,7 +347,8 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, sc 
 			} else {
 				return nil, &errorType{
 					"cannot set array element for non-numeric key '" +
-						paths[0].part + "'"}
+						paths[0].part + "'",
+				}
 			}
 		}
 		if appendit {

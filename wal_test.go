@@ -443,7 +443,6 @@ func testFirstLast(t *testing.T, l *WalLog, expectFirst, expectLast uint64, data
 			}
 		}
 	}
-
 }
 
 func TestLog(t *testing.T) {
@@ -482,7 +481,7 @@ func TestOutliers(t *testing.T) {
 	})
 	t.Run("fail-not-a-directory", func(t *testing.T) {
 		defer os.RemoveAll("testlog/file")
-		if err := os.MkdirAll("testlog", 0777); err != nil {
+		if err := os.MkdirAll("testlog", 0o777); err != nil {
 			t.Fatal(err)
 		} else if f, err := os.Create("testlog/file"); err != nil {
 			t.Fatal(err)
@@ -496,7 +495,7 @@ func TestOutliers(t *testing.T) {
 	t.Run("load-with-junk-files", func(t *testing.T) {
 		// junk should be ignored
 		defer os.RemoveAll("testlog/junk")
-		if err := os.MkdirAll("testlog/junk/other1", 0777); err != nil {
+		if err := os.MkdirAll("testlog/junk/other1", 0o777); err != nil {
 			t.Fatal(err)
 		}
 		f, err := os.Create("testlog/junk/other2")
@@ -519,31 +518,31 @@ func TestOutliers(t *testing.T) {
 	t.Run("fail-corrupted-tail-json", func(t *testing.T) {
 		defer os.RemoveAll("testlog/corrupt-tail")
 		opts := makeOpts(512, true, JSONFormat)
-		os.MkdirAll("testlog/corrupt-tail", 0777)
+		os.MkdirAll("testlog/corrupt-tail", 0o777)
 		ioutil.WriteFile(
 			"testlog/corrupt-tail/00000000000000000001",
-			[]byte("\n"), 0666)
+			[]byte("\n"), 0o666)
 		if l, err := WalOpen("testlog/corrupt-tail", opts); err != ErrCorrupt {
 			l.Close()
 			t.Fatalf("expected %v, got %v", ErrCorrupt, err)
 		}
 		ioutil.WriteFile(
 			"testlog/corrupt-tail/00000000000000000001",
-			[]byte(`{}`+"\n"), 0666)
+			[]byte(`{}`+"\n"), 0o666)
 		if l, err := WalOpen("testlog/corrupt-tail", opts); err != ErrCorrupt {
 			l.Close()
 			t.Fatalf("expected %v, got %v", ErrCorrupt, err)
 		}
 		ioutil.WriteFile(
 			"testlog/corrupt-tail/00000000000000000001",
-			[]byte(`{"index":"1"}`+"\n"), 0666)
+			[]byte(`{"index":"1"}`+"\n"), 0o666)
 		if l, err := WalOpen("testlog/corrupt-tail", opts); err != ErrCorrupt {
 			l.Close()
 			t.Fatalf("expected %v, got %v", ErrCorrupt, err)
 		}
 		ioutil.WriteFile(
 			"testlog/corrupt-tail/00000000000000000001",
-			[]byte(`{"index":"1","data":"?"}`), 0666)
+			[]byte(`{"index":"1","data":"?"}`), 0o666)
 		if l, err := WalOpen("testlog/corrupt-tail", opts); err != ErrCorrupt {
 			l.Close()
 			t.Fatalf("expected %v, got %v", ErrCorrupt, err)
@@ -562,11 +561,10 @@ func TestOutliers(t *testing.T) {
 		firstIndex := l.segments[l.findSegment(35)].index
 		must(nil, l.Close())
 		data := must(ioutil.ReadFile(path)).([]byte)
-		must(nil, ioutil.WriteFile(path+".START", data, 0666))
+		must(nil, ioutil.WriteFile(path+".START", data, 0o666))
 		l = must(WalOpen(lpath, opts)).(*WalLog)
 		defer l.Close()
 		testFirstLast(t, l, firstIndex, 100, nil)
-
 	})
 	// t.Run("end-marker-file", func(t *testing.T) {
 	// 	lpath := "testlog/end-marker"
@@ -598,7 +596,6 @@ func TestOutliers(t *testing.T) {
 	// 	defer l.Close()
 	// 	testFirstLast(t, l, 1, lastIndex)
 	// })
-
 }
 
 func makeOpts(segSize int, noSync bool, lf LogFormat) *WalOptions {
@@ -611,9 +608,11 @@ func makeOpts(segSize int, noSync bool, lf LogFormat) *WalOptions {
 
 // https://github.com/tidwall/wal/issues/1
 func TestIssue1(t *testing.T) {
-	in := []byte{0, 0, 0, 0, 0, 0, 0, 1, 37, 108, 131, 178, 151, 17, 77, 32,
+	in := []byte{
+		0, 0, 0, 0, 0, 0, 0, 1, 37, 108, 131, 178, 151, 17, 77, 32,
 		27, 48, 23, 159, 63, 14, 240, 202, 206, 151, 131, 98, 45, 165, 151, 67,
-		38, 180, 54, 23, 138, 238, 246, 16, 0, 0, 0, 0}
+		38, 180, 54, 23, 138, 238, 246, 16, 0, 0, 0, 0,
+	}
 	opts := *DefaultWalOptions
 	opts.LogFormat = JSONFormat
 	os.RemoveAll("testlog")
@@ -730,7 +729,6 @@ func TestSimpleTruncateFront(t *testing.T) {
 		t.Fatal(err)
 	}
 	validReopen(t, 100, 100)
-
 }
 
 func TestSimpleTruncateBack(t *testing.T) {
@@ -834,7 +832,6 @@ func TestSimpleTruncateBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	validReopen(t, 1, 92)
-
 }
 
 func TestConcurrency(t *testing.T) {

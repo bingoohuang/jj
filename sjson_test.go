@@ -327,6 +327,7 @@ func TestIndex(t *testing.T) {
 		t.Fatal("mismatch")
 	}
 }
+
 func TestIndexes2(t *testing.T) {
 	path := `friends.#(last="Murphy")#.last`
 	json, err := Set(example, path, "Johnson")

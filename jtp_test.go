@@ -327,7 +327,6 @@ func TestTestifyNoJSONThreatInBytesErrorCase2(t *testing.T) {
 			t.Errorf("Expected Ok to Be False and Error of kind ErrInvalidJSON")
 		}
 	})
-
 }
 
 func TestTestifyNoJSONThreatInBytesPositiveCase1(t *testing.T) {
@@ -341,7 +340,6 @@ func TestTestifyNoJSONThreatInBytesPositiveCase1(t *testing.T) {
 			t.Errorf("Expected Ok to Be True and Error nil")
 		}
 	})
-
 }
 
 func TestTestifyNoJSONThreatInBytesPositiveBoundaryCase1(t *testing.T) {
@@ -361,7 +359,6 @@ func TestTestifyNoJSONThreatInBytesPositiveBoundaryCase1(t *testing.T) {
 			t.Errorf("Expected Ok to Be True and Error nil")
 		}
 	})
-
 }
 
 func TestTestifyNoJSONThreatInBytesPositiveBoundaryCase2(t *testing.T) {
@@ -377,7 +374,6 @@ func TestTestifyNoJSONThreatInBytesPositiveBoundaryCase2(t *testing.T) {
 			t.Errorf("Expected Ok to Be True and Error nil")
 		}
 	})
-
 }
 
 func BenchmarkTestifyNoThreatInBytes(b *testing.B) {

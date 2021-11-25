@@ -128,7 +128,7 @@ func WalOpen(path string, opts *WalOptions) (l *WalLog, err error) {
 	}
 	l = &WalLog{path: path, opts: *opts}
 	l.scache.Resize(l.opts.SegmentCacheSize)
-	if err := os.MkdirAll(path, 0777); err != nil {
+	if err := os.MkdirAll(path, 0o777); err != nil {
 		return nil, err
 	}
 	if err := l.load(); err != nil {
@@ -244,7 +244,7 @@ func (l *WalLog) load() error {
 	l.firstIndex = l.segments[0].index
 	// WalOpen the last segment for appending
 	lseg := l.segments[len(l.segments)-1]
-	l.sfile, err = os.OpenFile(lseg.path, os.O_WRONLY, 0666)
+	l.sfile, err = os.OpenFile(lseg.path, os.O_WRONLY, 0o666)
 	if err != nil {
 		return err
 	}
@@ -679,6 +679,7 @@ func (l *WalLog) ClearCache() error {
 	l.clearCache()
 	return nil
 }
+
 func (l *WalLog) clearCache() {
 	l.scache.Range(func(_, v interface{}) bool {
 		s := v.(*segment)
@@ -774,7 +775,7 @@ func (l *WalLog) truncateFront(index uint64) (err error) {
 	s.index = index
 	if segIdx == len(l.segments)-1 {
 		// Reopen the tail segment file
-		if l.sfile, err = os.OpenFile(newName, os.O_WRONLY, 0666); err != nil {
+		if l.sfile, err = os.OpenFile(newName, os.O_WRONLY, 0o666); err != nil {
 			return err
 		}
 		var n int64
@@ -876,7 +877,7 @@ func (l *WalLog) truncateBack(index uint64) (err error) {
 		return err
 	}
 	// Reopen the tail segment file
-	if l.sfile, err = os.OpenFile(newName, os.O_WRONLY, 0666); err != nil {
+	if l.sfile, err = os.OpenFile(newName, os.O_WRONLY, 0o666); err != nil {
 		return err
 	}
 	var n int64

@@ -2,8 +2,9 @@ package jj_test
 
 import (
 	"fmt"
-	"github.com/bingoohuang/jj"
 	"testing"
+
+	"github.com/bingoohuang/jj"
 )
 
 func TestRandJSON(t *testing.T) {

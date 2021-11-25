@@ -49,6 +49,7 @@ func assertNil(t *testing.T, a interface{}) {
 		t.Fatalf("%v is not nil", a)
 	}
 }
+
 func assertEqual(t *testing.T, a, b interface{}) {
 	t.Helper()
 	if !reflect.DeepEqual(a, b) {
@@ -458,6 +459,7 @@ func BenchmarkSpec(t *testing.B) {
 		Ugly(example3)
 	}
 }
+
 func BenchmarkSpecInPlace(t *testing.B) {
 	example4 := []byte(string(example3))
 	t.ReportAllocs()
@@ -466,6 +468,7 @@ func BenchmarkSpecInPlace(t *testing.B) {
 		UglyInPlace(example4)
 	}
 }
+
 func BenchmarkJSONIndent(t *testing.B) {
 	var dst bytes.Buffer
 	t.ReportAllocs()
@@ -483,6 +486,7 @@ func BenchmarkJSONCompact(t *testing.B) {
 		_ = json.Compact(&dst, example1)
 	}
 }
+
 func TestPrettyNoSpaceAfterNewline(t *testing.T) {
 	json := `[{"foo":1,"bar":2},{"foo":3,"bar":4}]`
 	json = string(Pretty([]byte(json)))
@@ -490,6 +494,7 @@ func TestPrettyNoSpaceAfterNewline(t *testing.T) {
 		t.Fatal("found a space followed by a newline, which should not be allowed")
 	}
 }
+
 func TestPrettyStableSort(t *testing.T) {
 	json := `{"c":3,"b":3,"a":3,"c":2,"b":2,"a":2,"c":1,"b":1,"a":1}`
 	opts := DefaultOptions
@@ -499,6 +504,7 @@ func TestPrettyStableSort(t *testing.T) {
 		t.Fatal("out of order")
 	}
 }
+
 func TestPrettyColor(t *testing.T) {
 	json := `"abc\u0020def\nghi"`
 	ret := string(Color([]byte(json), nil))
@@ -512,6 +518,7 @@ func TestPrettyColor(t *testing.T) {
 		t.Fatalf("expected '%s', got '%s'", exp, ret)
 	}
 }
+
 func TestSpec(t *testing.T) {
 	json := `
   {  //	hello
@@ -540,6 +547,7 @@ func TestSpec(t *testing.T) {
 		t.Fatalf("expected '%s', got '%s'", expect, out)
 	}
 }
+
 func TestStableSort10(t *testing.T) {
 	expect := `{"key":"abc","key":"bbb","key":"rrr","key":"value","key3":3}`
 	jsons := []string{
@@ -558,6 +566,7 @@ func TestStableSort10(t *testing.T) {
 		}
 	}
 }
+
 func TestNaN(t *testing.T) {
 	vals := []string{"NaN", "nan", "Nan", "nAn", "inf", "Inf", "-inf", "+Inf"}
 	for _, val := range vals {

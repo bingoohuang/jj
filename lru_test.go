@@ -165,7 +165,6 @@ func TestLRU(t *testing.T) {
 		if prev != items[i].val {
 			t.Fatalf("expected %v, got %v",
 				items[i].val, prev)
-
 		}
 	}
 
@@ -175,7 +174,6 @@ func TestLRU(t *testing.T) {
 			if !ok || s != "invalid size" {
 				t.Fatalf("expected '%v', got '%v'", "invalid size", s)
 			}
-
 		}()
 		cache.Resize(0)
 	}()

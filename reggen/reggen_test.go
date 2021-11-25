@@ -77,7 +77,6 @@ func TestSeed(t *testing.T) {
 			t.Error("Results should not match")
 		}
 	}
-
 }
 
 func BenchmarkGenerate(b *testing.B) {

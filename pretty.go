@@ -162,6 +162,7 @@ type byKeyVal struct {
 func (arr *byKeyVal) Len() int {
 	return len(arr.pairs)
 }
+
 func (arr *byKeyVal) Less(i, j int) bool {
 	if arr.isLess(i, j, byKey) {
 		return true
@@ -171,6 +172,7 @@ func (arr *byKeyVal) Less(i, j int) bool {
 	}
 	return arr.isLess(i, j, byVal)
 }
+
 func (arr *byKeyVal) Swap(i, j int) {
 	arr.pairs[i], arr.pairs[j] = arr.pairs[j], arr.pairs[i]
 	arr.sorted = true
@@ -250,7 +252,6 @@ func (arr *byKeyVal) isLess(i, j int, kind byKind) bool {
 		return n1 < n2
 	}
 	return string(v1) < string(v2)
-
 }
 
 func parsestr(s []byte) []byte {
@@ -266,6 +267,7 @@ func parsestr(s []byte) []byte {
 	}
 	return nil
 }
+
 func appendPrettyObject(buf, json []byte, i int, open, close byte, po prettyOption) ([]byte, int, int, bool) {
 	var ok bool
 	if po.width > 0 {
