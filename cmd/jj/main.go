@@ -28,6 +28,7 @@ options:
      -v value   Edit JSON key path value
      -c         Print cheatsheet
      -u         Make json ugly, keypath is optional
+     -R         Create a random json
      -r         Use raw values, otherwise types are auto-detected
      -n         Do not modifyOutput color or extra formatting
      -O         Performance boost for value updates
@@ -47,7 +48,7 @@ type args struct {
 
 	keypath string
 
-	raw, del, opt, keypathok              bool
+	raw, del, opt, keypathok, random      bool
 	ugly, notty, lines, rawKey, gen, expr bool
 
 	jsonMap map[string]interface{}
@@ -89,6 +90,8 @@ func parseArgs() args {
 						a.ugly = true
 					case 'r':
 						a.raw = true
+					case 'R':
+						a.random = true
 					case 'O':
 						a.opt = true
 					case 'D':
@@ -213,6 +216,14 @@ type Out struct {
 }
 
 func (a args) createOut(outChan chan Out) {
+	if a.random {
+		var out Out
+		out.Data = jj.Rand()
+		outChan <- out
+		close(outChan)
+		return
+	}
+
 	var input []byte
 	var err error
 	if len(a.jsonMap) > 0 {
@@ -224,11 +235,12 @@ func (a args) createOut(outChan chan Out) {
 		fail(err)
 	}
 
-	opts := jj.SetOptions{PathOption: jj.PathOption{RawPath: a.rawKey}}
 	if a.gen {
 		a.generate(outChan, input)
 		return
 	}
+
+	opts := jj.SetOptions{PathOption: jj.PathOption{RawPath: a.rawKey}}
 
 	if a.del {
 		var out Out

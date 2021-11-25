@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bingoohuang/easyjson/jlexer"
 	"github.com/bingoohuang/gg/pkg/jsoni"
 	"github.com/buger/jsonparser"
-	"github.com/mailru/easyjson/jlexer"
 	fflib "github.com/pquerna/ffjson/fflib/v1"
 )
 

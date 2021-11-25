@@ -1185,3 +1185,6 @@ jj -O -v 12A features.10000.properties.LOT_NUM > /dev/null  0.22s user 0.27s sys
 
 1. [Json Incremental Digger, drill down JSON interactively by using filtering queries like jq](https://github.com/simeji/jid)
 2. [go-jmespath is a GO implementation of JMESPath, which is a query language for JSON](https://github.com/jmespath/go-jmespath)
+3. [online converter, transform.tools ,toml-to-json, json-to-go](https://transform.tools/json-to-go)
+4. [songsterr.com, guitar tabs data api](https://www.songsterr.com/a/ra/songs.json?pattern=Beatles)
+5. 
