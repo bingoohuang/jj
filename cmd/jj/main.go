@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -38,6 +39,7 @@ options:
      -g         Generate random JSON by input
      -e         Eval keypath value as an expression
      -o outfile Use modifyOutput file instead of stdout
+     -f regex   List the key and values which regex matches its key
      -k keypath JSON key path (like "name.last")
      -K keypath JSON key path as raw whole key
       keypath   Last argument for JSON key path`
@@ -46,7 +48,7 @@ options:
 type args struct {
 	infile, outfile, value *string
 
-	keypath string
+	keypath, findRegex string
 
 	raw, del, opt, keypathok, random      bool
 	ugly, notty, lines, rawKey, gen, expr bool
@@ -120,7 +122,7 @@ func parseArgs() args {
 			} else {
 				fail("unknown option argument: \"%s\"", a.keypath)
 			}
-		case "-v", "-i", "-o", "-k", "-K":
+		case "-v", "-i", "-o", "-k", "-K", "-f":
 			arg := os.Args[i]
 			i++
 			if i >= len(os.Args) {
@@ -137,6 +139,8 @@ func parseArgs() args {
 				a.keypathok = true
 				a.keypath = os.Args[i]
 				a.rawKey = arg == "-K"
+			case "-f":
+				a.findRegex = os.Args[i]
 			}
 		case "--force-notty":
 			a.notty = true
@@ -240,6 +244,12 @@ func (a args) createOut(outChan chan Out) {
 		return
 	}
 
+	if a.findRegex != "" {
+		a.findKeyValues(input)
+		close(outChan)
+		return
+	}
+
 	opts := jj.SetOptions{PathOption: jj.PathOption{RawPath: a.rawKey}}
 
 	if a.del {
@@ -320,6 +330,41 @@ func (a args) createOut(outChan chan Out) {
 	outChan <- out
 	close(outChan)
 	return
+}
+
+func (a args) findKeyValues(input []byte) {
+	re := regexp.MustCompile(a.findRegex)
+	foundKey := ""
+	found := false
+	openCount := 0
+	openStart := 0
+	jj.StreamParse(input, func(start, end, info int) int {
+		v := string(input[start:end])
+		if found {
+			if jj.IsToken(info, jj.TokOpen) {
+				openCount++
+				if openCount == 1 {
+					openStart = start
+				}
+			} else if jj.IsToken(info, jj.TokClose) {
+				openCount--
+				if openCount == 0 {
+					fmt.Printf("%s: %s\n", foundKey, input[openStart:end])
+					found = false
+				}
+			} else if openCount == 0 && jj.IsToken(info, jj.TokString, jj.TokNumber, jj.TokTrue, jj.TokFalse, jj.TokNull) {
+				fmt.Printf("%s: %s\n", foundKey, v)
+				found = false
+			}
+		} else if jj.IsToken(info, jj.TokKey) {
+			k := v[1 : len(v)-1] // 去除两端双引号
+			if found = re.MatchString(k); found {
+				foundKey = v
+			}
+		}
+
+		return 1
+	})
 }
 
 func (a args) assignOut(out *Out, res jj.Result) {

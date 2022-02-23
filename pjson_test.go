@@ -33,7 +33,7 @@ func ExampleStreamParse() {
 	`
 	// A JSON stream parser
 	jj.StreamParse([]byte(JSON), func(start, end, info int) int {
-		if jj.IsToken(info, jj.TokString|jj.TokValue) {
+		if jj.IsToken(info, jj.TokString) || jj.IsToken(info, jj.TokValue) {
 			fmt.Println(JSON[start:end])
 		}
 		return 1

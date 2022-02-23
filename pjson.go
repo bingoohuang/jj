@@ -495,6 +495,12 @@ func vnull(json []byte, i int) (outi int, ok, stop bool) {
 }
 
 // IsToken tests the info that only has tokens.
-func IsToken(info int, tokens int) bool {
-	return info&tokens == tokens
+func IsToken(info int, tokens ...int) bool {
+	for _, token := range tokens {
+		if info&token == token {
+			return true
+		}
+	}
+
+	return false
 }

@@ -1,3 +1,4 @@
+c. Find by key which match the regex: $ jj -i a.json -f "Hostname"
 b. Create a random json: $ jj -Ru => {"unapproving":true,"neet":false,"exhale":20.03,"septum":null,"hygeist":"squareness"}
 a. Create json by cli:  $ jj name=bingoo age:=100 -u    => {"age":100,"name":"bingoo"}
 1. Get a string:        $ echo '{"name":{"first":"Tom","last":"Smith"}}' | jj name.last    => Smith
