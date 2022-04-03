@@ -35,6 +35,7 @@ options:
      -O         Performance boost for value updates
      -D         Delete the value at the specified key path
      -l         Output array values on multiple lines
+     -L         Print the length of json array or elements of json object
      -i infile  Use input file instead of stdin
      -g         Generate random JSON by input
      -e         Eval keypath value as an expression
@@ -52,6 +53,7 @@ type args struct {
 
 	raw, del, opt, keypathok, random      bool
 	ugly, notty, lines, rawKey, gen, expr bool
+	countLength                           bool
 
 	jsonMap map[string]interface{}
 }
@@ -100,6 +102,8 @@ func parseArgs() args {
 						a.del = true
 					case 'n':
 						a.notty = true
+					case 'L':
+						a.countLength = true
 					case 'l':
 						a.lines = true
 					case 'g':
@@ -244,6 +248,12 @@ func (a args) createOut(outChan chan Out) {
 		return
 	}
 
+	if a.countLength {
+		a.doCountLength(input)
+		close(outChan)
+		return
+	}
+
 	if a.findRegex != "" {
 		a.findKeyValues(input)
 		close(outChan)
@@ -332,6 +342,40 @@ func (a args) createOut(outChan chan Out) {
 	return
 }
 
+func (a args) doCountLength(input []byte) {
+	size := 0
+	started := false
+	openCount := 0
+	isArray := false
+	jj.StreamParse(input, func(start, end, info int) int {
+		if !started {
+			started = true
+			isArray = jj.IsToken(info, jj.TokArray)
+			return 1
+		}
+
+		if !isArray {
+			if jj.IsToken(info, jj.TokKey) && openCount == 0 {
+				size++
+			}
+			return -1
+		}
+
+		if jj.IsToken(info, jj.TokOpen) {
+			openCount++
+		} else if jj.IsToken(info, jj.TokClose) {
+			openCount--
+		}
+
+		if openCount == 1 || openCount == 0 && jj.IsToken(info, jj.TokString, jj.TokNumber, jj.TokTrue, jj.TokFalse, jj.TokNull) {
+			size++
+		}
+
+		return -1
+	})
+
+	fmt.Printf("%d\n", size)
+}
 func (a args) findKeyValues(input []byte) {
 	re := regexp.MustCompile(a.findRegex)
 	foundKey := ""

@@ -510,7 +510,7 @@ func RandomBase64(args string) interface{} {
 	ParseConf(args, &arg)
 
 	token := make([]byte, arg.Size)
-	rand.Read(token)
+	_, _ = rand.Read(token)
 
 	encoding := base64.StdEncoding
 	if arg.Url {
