@@ -1,0 +1,10 @@
+[
+  1,
+  "string",
+  true,
+  false,
+  null,
+  {
+    "name": "bingoo"
+  }
+]

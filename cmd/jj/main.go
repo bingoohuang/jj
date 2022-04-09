@@ -35,7 +35,7 @@ options:
      -O         Performance boost for value updates
      -D         Delete the value at the specified key path
      -l         Output array values on multiple lines
-     -L         Print the length of json array or elements of json object
+     -I         Print each child of json array
      -i infile  Use input file instead of stdin
      -g         Generate random JSON by input
      -e         Eval keypath value as an expression
@@ -53,7 +53,7 @@ type args struct {
 
 	raw, del, opt, keypathok, random      bool
 	ugly, notty, lines, rawKey, gen, expr bool
-	countLength                           bool
+	iterateArray                          bool
 
 	jsonMap map[string]interface{}
 }
@@ -98,8 +98,8 @@ func parseArgs() args {
 						a.del = true
 					case 'n':
 						a.notty = true
-					case 'L':
-						a.countLength = true
+					case 'I':
+						a.iterateArray = true
 					case 'l':
 						a.lines = true
 					case 'g':
@@ -247,9 +247,8 @@ func (a args) createOut(outChan chan Out) {
 		return
 	}
 
-	if a.countLength {
-		a.doCountLength(input)
-		close(outChan)
+	if a.iterateArray {
+		a.doIterateArray(outChan, input)
 		return
 	}
 
@@ -341,11 +340,11 @@ func (a args) createOut(outChan chan Out) {
 	return
 }
 
-func (a args) doCountLength(input []byte) {
-	size := 0
+func (a args) doIterateArray(outChan chan Out, input []byte) {
 	started := false
 	openCount := 0
 	isArray := false
+	elemStart := 0
 	jj.StreamParse(input, func(start, end, info int) int {
 		if !started {
 			started = true
@@ -354,27 +353,47 @@ func (a args) doCountLength(input []byte) {
 		}
 
 		if !isArray {
-			if jj.IsToken(info, jj.TokKey) && openCount == 0 {
-				size++
-			}
 			return -1
 		}
 
 		if jj.IsToken(info, jj.TokOpen) {
 			openCount++
+			if openCount == 1 {
+				elemStart = start
+			}
 		} else if jj.IsToken(info, jj.TokClose) {
+			if openCount == 1 {
+				out := Out{Data: input[elemStart:end], IsArray: jj.IsToken(info, jj.TokArray), Type: jj.JSON}
+				outChan <- out
+			}
 			openCount--
 		}
 
-		if openCount == 1 || openCount == 0 && jj.IsToken(info, jj.TokString, jj.TokNumber, jj.TokTrue, jj.TokFalse, jj.TokNull) {
-			size++
+		if openCount == 0 && jj.IsToken(info, jj.TokString, jj.TokNumber, jj.TokTrue, jj.TokFalse, jj.TokNull) {
+			var typ jj.Type
+			switch {
+			case jj.IsToken(info, jj.TokString):
+				typ = jj.String
+			case jj.IsToken(info, jj.TokNumber):
+				typ = jj.Number
+			case jj.IsToken(info, jj.TokTrue):
+				typ = jj.True
+			case jj.IsToken(info, jj.TokFalse):
+				typ = jj.False
+			case jj.IsToken(info, jj.TokNull):
+				typ = jj.Null
+			}
+
+			out := Out{Data: input[start:end], IsArray: false, Type: typ}
+			outChan <- out
 		}
 
 		return -1
 	})
 
-	fmt.Printf("%d\n", size)
+	close(outChan)
 }
+
 func (a args) findKeyValues(input []byte) {
 	re := regexp.MustCompile(a.findRegex)
 	foundKey := ""
@@ -420,7 +439,7 @@ func (a args) assignOut(out *Out, res jj.Result) {
 	}
 }
 
-func (a args) generate(outChan chan Out, input []byte) chan Out {
+func (a args) generate(outChan chan Out, input []byte) {
 	gen := jj.NewGen()
 	s := string(input)
 	for {
@@ -436,7 +455,6 @@ func (a args) generate(outChan chan Out, input []byte) chan Out {
 	}
 
 	close(outChan)
-	return outChan
 }
 
 func createInput(a args) ([]byte, error) {
@@ -480,6 +498,11 @@ func (a args) modifyOutput(f *os.File, out Out) []byte {
 			out.Data = jj.Pretty(out.Data)
 		}
 	}
+
+	for len(out.Data) > 0 && out.Data[len(out.Data)-1] == '\n' {
+		out.Data = out.Data[:len(out.Data)-1]
+	}
+
 	if !a.notty && isatty.IsTerminal(f.Fd()) {
 		if a.raw || out.Type != jj.String {
 			out.Data = jj.Color(out.Data, jj.TerminalStyle)
@@ -487,9 +510,7 @@ func (a args) modifyOutput(f *os.File, out Out) []byte {
 			out.Data = append([]byte(jj.TerminalStyle.String[0]), out.Data...)
 			out.Data = append(out.Data, jj.TerminalStyle.String[1]...)
 		}
-		for len(out.Data) > 0 && out.Data[len(out.Data)-1] == '\n' {
-			out.Data = out.Data[:len(out.Data)-1]
-		}
+
 		out.Data = append(out.Data, '\n')
 	}
 	return out.Data
