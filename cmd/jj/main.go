@@ -84,10 +84,6 @@ func parseArgs() args {
 			if len(os.Args[i]) > 1 && os.Args[i][0] == '-' {
 				for j := 1; j < len(os.Args[i]); j++ {
 					switch os.Args[i][j] {
-					default:
-						fail("unknown option argument: \"-%c\"", os.Args[i][j])
-					case '-':
-						fail("unknown option argument: \"%s\"", os.Args[i])
 					case 'c':
 						printCheatsAndExit()
 					case 'u':
@@ -110,10 +106,13 @@ func parseArgs() args {
 						a.gen = true
 					case 'e':
 						a.expr = true
+					default:
+						goto P1
 					}
 				}
 				continue
 			}
+		P1:
 			if p1 := strings.Index(os.Args[i], ":="); p1 > 0 {
 				// Raw JSON fields
 				a.jsonMap[os.Args[i][:p1]] = json.RawMessage(os.Args[i][p1+2:])
