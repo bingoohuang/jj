@@ -510,8 +510,7 @@ func (a args) modifyOutput(f *os.File, out Out) []byte {
 			out.Data = append([]byte(jj.TerminalStyle.String[0]), out.Data...)
 			out.Data = append(out.Data, jj.TerminalStyle.String[1]...)
 		}
-
-		out.Data = append(out.Data, '\n')
 	}
-	return out.Data
+
+	return append(out.Data, '\n')
 }
