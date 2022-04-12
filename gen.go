@@ -6,8 +6,10 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/bingoohuang/gg/pkg/osx"
 	"io"
 	"log"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -34,8 +36,8 @@ var DefaultSubstituteFns = SubstituteFnMap(map[string]SubstitutionFn{
 	"objectId":     func(string) interface{} { return NewObjectID().Hex() },
 	"regex":        Regex,
 	"uuid":         func(_ string) interface{} { return NewUUID().String() },
-	"base64":       RandomBase64, // @base64(size=1000 std raw)
-	"name":         RandomName,
+	"base64":       RandomBase64, // @base64(size=1000 std raw file=dir/f.png)
+	"name":         func(_ string) interface{} { return randomdata.SillyName() },
 	"ksuid":        func(_ string) interface{} { v, _ := uid.NewRandom(); return v.String() },
 	"汉字":           func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
 	"姓名":           func(_ string) interface{} { return chinaid.Name() },
@@ -105,10 +107,6 @@ func parseImageSize(val string) (width, height int) {
 		}
 	}
 	return width, height
-}
-
-func RandomName(_ string) interface{} {
-	return randomdata.SillyName()
 }
 
 type SubstituteFnMap map[string]SubstitutionFn
@@ -505,12 +503,26 @@ func RandomBase64(args string) interface{} {
 		Std  bool
 		Url  bool
 		Raw  bool
+		File string
 	}{}
 
 	ParseConf(args, &arg)
 
-	token := make([]byte, arg.Size)
-	_, _ = rand.Read(token)
+	var token []byte
+	if arg.File != "" {
+		if stat, err := os.Stat(arg.File); err != nil {
+			log.Printf("stat %s failed: %v", arg.File, err)
+		} else if stat.IsDir() {
+			log.Printf("file %s is not a directory", arg.File)
+		} else {
+			if token, err = osx.ReadFile(arg.File); err != nil {
+				log.Printf("read file %s failed: %v", arg.File, err)
+			}
+		}
+	} else {
+		token = make([]byte, arg.Size)
+		_, _ = rand.Read(token)
+	}
 
 	encoding := base64.StdEncoding
 	if arg.Url {
