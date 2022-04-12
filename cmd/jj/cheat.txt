@@ -63,3 +63,4 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 33. $ echo '{"name":{"first":"Tom","age":18}}' | jj -e '"Hello:" + name.first'               => Hello:Tom
 34. $ echo '{"name":{"first":"Tom","age":18}}' | jj -e 'name.first=="Tom" and name.age == 18'  => true
      more expression syntax, go https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
+35. $ echo '{"body":"{\\"_hl\\": \\"mockbin\\"}"}' | jj -pu     =>  {"body":{"_hl":"mockbin"}}

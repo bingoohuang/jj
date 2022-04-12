@@ -39,6 +39,7 @@ options:
      -i infile  Use input file instead of stdin
      -g         Generate random JSON by input
      -e         Eval keypath value as an expression
+     -p         Parse inner JSON string as a JSON
      -o outfile Use modifyOutput file instead of stdout
      -f regex   List the key and values which regex matches its key
      -k keypath JSON key path (like "name.last")
@@ -53,7 +54,7 @@ type args struct {
 
 	raw, del, opt, keypathok, random      bool
 	ugly, notty, lines, rawKey, gen, expr bool
-	iterateArray                          bool
+	iterateArray, parseInnerJSONString    bool
 
 	jsonMap map[string]interface{}
 }
@@ -98,6 +99,8 @@ func parseArgs() args {
 						a.del = true
 					case 'n':
 						a.notty = true
+					case 'p':
+						a.parseInnerJSONString = true
 					case 'I':
 						a.iterateArray = true
 					case 'l':
@@ -252,6 +255,11 @@ func (a args) createOut(outChan chan Out) {
 		return
 	}
 
+	if a.parseInnerJSONString {
+		a.formatInnerJsonString(outChan, input)
+		return
+	}
+
 	if a.findRegex != "" {
 		a.findKeyValues(input)
 		close(outChan)
@@ -338,6 +346,16 @@ func (a args) createOut(outChan chan Out) {
 	outChan <- out
 	close(outChan)
 	return
+}
+
+func (a args) formatInnerJsonString(outChan chan Out, input []byte) {
+	out := jj.ParseBytes(jj.FreeInnerJSON(input))
+	outChan <- Out{
+		Data:    []byte(out.String()),
+		IsArray: out.IsArray(),
+		Type:    out.Type,
+	}
+	close(outChan)
 }
 
 func (a args) doIterateArray(outChan chan Out, input []byte) {
