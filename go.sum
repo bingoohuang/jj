@@ -40,8 +40,8 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bingoohuang/easyjson v0.0.0-20211118132814-5606aa48c508 h1:Ew6KVZFgaX/C93v95gc1spL8H+4pis70mLSXFlvyk0E=
 github.com/bingoohuang/easyjson v0.0.0-20211118132814-5606aa48c508/go.mod h1:pj5RZaMJwbOBOXIzDlvOY1kQBJ1unO/XA+gHt17QxBQ=
-github.com/bingoohuang/gg v0.0.0-20220401032752-6d4a79888f0e h1:KLtNwUd1E/0p/WIDu5tT58NF5alMlgs/XBSFspeHSRQ=
-github.com/bingoohuang/gg v0.0.0-20220401032752-6d4a79888f0e/go.mod h1:tltYEITxWTTXTTAqJNBK62x6Eg1iThhAnez8CxcQxQo=
+github.com/bingoohuang/gg v0.0.0-20220411025401-10e1fd6c6d33 h1:a/WLYX8hxizNQAiKknusS5tew+G0QzUfTx39CwYvrl4=
+github.com/bingoohuang/gg v0.0.0-20220411025401-10e1fd6c6d33/go.mod h1:tltYEITxWTTXTTAqJNBK62x6Eg1iThhAnez8CxcQxQo=
 github.com/bingoohuang/golog v0.0.0-20211112131923-101b7e1b3d4c/go.mod h1:atiVUeYe0Rsi80P0eDEF8lpf9qvt/w/qpil8PpNGYvw=
 github.com/bingoohuang/sariaf v0.0.0-20201222043148-21fd9703b115/go.mod h1:DSi1LVR76Ap189KzzA40C8pFSpRZHsy/n+kgK8ihfhs=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=

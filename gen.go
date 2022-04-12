@@ -515,8 +515,10 @@ func RandomBase64(args string) interface{} {
 		} else if stat.IsDir() {
 			log.Printf("file %s is not a directory", arg.File)
 		} else {
-			if token, err = osx.ReadFile(arg.File); err != nil {
-				log.Printf("read file %s failed: %v", arg.File, err)
+			if r := osx.ReadFile(arg.File); !r.OK() {
+				log.Printf("read file %s failed: %v", arg.File, r.Err)
+			} else {
+				token = r.Data
 			}
 		}
 	} else {
