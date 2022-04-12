@@ -1,20 +1,23 @@
 package jj
 
 import (
-	"crypto/rand"
+	crand "crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/bingoohuang/gg/pkg/osx"
 	"io"
 	"log"
+	"math/rand"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/bingoohuang/gg/pkg/osx"
+	"github.com/dustin/go-humanize"
 
 	"github.com/Pallinder/go-randomdata"
 	"github.com/bingoohuang/gg/pkg/chinaid"
@@ -63,8 +66,6 @@ func RandomImage(conf string) interface{} {
 	switch strings.ToLower(arg.Format) {
 	case ".jpg", "jpg", ".jpeg", "jpeg":
 		imgFormat = ".jpg"
-	case ".png", "png":
-		imgFormat = ".png"
 	default:
 		imgFormat = ".png"
 	}
@@ -498,7 +499,7 @@ func MapToConf(m map[string]string, v interface{}) {
 
 func RandomBase64(args string) interface{} {
 	arg := struct {
-		Size int
+		Size string
 		Std  bool
 		Url  bool
 		Raw  bool
@@ -514,8 +515,9 @@ func RandomBase64(args string) interface{} {
 		} else {
 			log.Printf("read file %s failed: %v", arg.File, r.Err)
 		}
-	} else {
-		token = make([]byte, arg.Size)
+	} else if size, _ := humanize.ParseBytes(arg.Size); size > 0 {
+		token = make([]byte, size)
+		rand.Seed(time.Now().UnixNano())
 		_, _ = rand.Read(token)
 	}
 
@@ -543,8 +545,9 @@ func Random(args string) interface{} {
 		return randx.String(i)
 	}
 
-	if _, _, size, err := parseRandSize(args); err == nil {
+	if size, err := humanize.ParseBytes(args); err == nil {
 		b := make([]byte, size*3/4)
+		rand.Seed(time.Now().UnixNano())
 		n, _ := rand.Read(b)
 		return base64.RawURLEncoding.EncodeToString(b[:n])
 	}
@@ -670,8 +673,8 @@ func encodeHex(dst []byte, uuid UUID) {
 }
 
 var (
-	rander = rand.Reader // random function
-	Nil    UUID          // empty UUID, all zeros
+	rander = crand.Reader // random function
+	Nil    UUID           // empty UUID, all zeros
 )
 
 // A UUID is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.

@@ -496,19 +496,19 @@ func (a args) createOutFile() *os.File {
 }
 
 func fail(err error) {
-	fmt.Fprintf(os.Stderr, "error: %v\n", err.Error())
+	_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err.Error())
 	os.Exit(1)
 }
 
 func (a args) modifyOutput(f *os.File, out Out) []byte {
 	if a.lines && out.IsArray {
-		var outb2 []byte
+		var b2 []byte
 		jj.ParseBytes(out.Data).ForEach(func(_, v jj.Result) bool {
-			outb2 = append(outb2, jj.Ugly([]byte(v.Raw))...)
-			outb2 = append(outb2, '\n')
+			b2 = append(b2, jj.Ugly([]byte(v.Raw))...)
+			b2 = append(b2, '\n')
 			return true
 		})
-		out.Data = outb2
+		out.Data = b2
 	} else if a.raw || out.Type != jj.String {
 		if a.ugly {
 			out.Data = jj.Ugly(out.Data)
