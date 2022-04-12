@@ -543,8 +543,10 @@ func Random(args string) interface{} {
 		return randx.String(i)
 	}
 
-	if _, _, times, err := parseRandSize(args); err == nil {
-		return randx.String(int(times))
+	if _, _, size, err := parseRandSize(args); err == nil {
+		b := make([]byte, size*3/4)
+		n, _ := rand.Read(b)
+		return base64.RawURLEncoding.EncodeToString(b[:n])
 	}
 
 	lastEl := ""
