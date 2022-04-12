@@ -9,7 +9,6 @@ import (
 	"github.com/bingoohuang/gg/pkg/osx"
 	"io"
 	"log"
-	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -510,16 +509,10 @@ func RandomBase64(args string) interface{} {
 
 	var token []byte
 	if arg.File != "" {
-		if stat, err := os.Stat(arg.File); err != nil {
-			log.Printf("stat %s failed: %v", arg.File, err)
-		} else if stat.IsDir() {
-			log.Printf("file %s is not a directory", arg.File)
+		if r := osx.ReadFile(arg.File); r.OK() {
+			token = r.Data
 		} else {
-			if r := osx.ReadFile(arg.File); !r.OK() {
-				log.Printf("read file %s failed: %v", arg.File, r.Err)
-			} else {
-				token = r.Data
-			}
+			log.Printf("read file %s failed: %v", arg.File, r.Err)
 		}
 	} else {
 		token = make([]byte, arg.Size)
