@@ -64,3 +64,4 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 34. $ echo '{"name":{"first":"Tom","age":18}}' | jj -e 'name.first=="Tom" and name.age == 18'  => true
      more expression syntax, go https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
 35. $ echo '{"body":"{\\"_hl\\": \\"mockbin\\"}"}' | jj -pu     =>  {"body":{"_hl":"mockbin"}}
+36. $ JJ_DEPTH=10 jj -R => create random json object with 10 elements.

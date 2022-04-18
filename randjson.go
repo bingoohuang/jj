@@ -9,7 +9,7 @@ import (
 type RandOptions struct {
 	// Pretty formats and indents the random json. Default true
 	Pretty bool
-	// Spread is the number of unique words to use. Default 1,000
+	// Words is the number of unique words to use. Default 1,000
 	Words int
 	// Depth is the maximum of nested child elements
 	Depth int

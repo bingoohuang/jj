@@ -6,11 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/bingoohuang/gg/pkg/ss"
 
 	"github.com/antonmedv/expr"
 	"github.com/bingoohuang/jj"
@@ -227,8 +231,17 @@ type Out struct {
 
 func (a args) createOut(outChan chan Out) {
 	if a.random {
+		rand.Seed(time.Now().UnixNano())
+		randOptions := jj.DefaultRandOptions
+		randOptions.Pretty = false
+		if j := os.Getenv("JJ_DEPTH"); j != "" {
+			if k := ss.ParseInt(j); k > 0 {
+				randOptions.Depth = k
+			}
+		}
+
 		var out Out
-		out.Data = jj.Rand()
+		out.Data = jj.Rand(randOptions)
 		outChan <- out
 		close(outChan)
 		return
