@@ -231,19 +231,7 @@ type Out struct {
 
 func (a args) createOut(outChan chan Out) {
 	if a.random {
-		rand.Seed(time.Now().UnixNano())
-		randOptions := jj.DefaultRandOptions
-		randOptions.Pretty = false
-		if j := os.Getenv("JJ_DEPTH"); j != "" {
-			if k := ss.ParseInt(j); k > 0 {
-				randOptions.Depth = k
-			}
-		}
-
-		var out Out
-		out.Data = jj.Rand(randOptions)
-		outChan <- out
-		close(outChan)
+		a.randomJSON(outChan)
 		return
 	}
 
@@ -359,6 +347,20 @@ func (a args) createOut(outChan chan Out) {
 	outChan <- out
 	close(outChan)
 	return
+}
+
+func (a args) randomJSON(outChan chan Out) {
+	rand.Seed(time.Now().UnixNano())
+	randOptions := jj.DefaultRandOptions
+	randOptions.Pretty = false
+	if j := os.Getenv("JJ_DEPTH"); j != "" {
+		if k := ss.ParseInt(j); k > 0 {
+			randOptions.Depth = k
+		}
+	}
+
+	outChan <- Out{Data: jj.Rand(randOptions)}
+	close(outChan)
 }
 
 func (a args) formatInnerJsonString(outChan chan Out, input []byte) {
@@ -479,9 +481,7 @@ func (a args) generate(outChan chan Out, input []byte) {
 			break
 		}
 
-		var out Out
-		out.Data = []byte(genResult.Out)
-		outChan <- out
+		outChan <- Out{Data: []byte(genResult.Out)}
 		s = s[i:]
 	}
 
@@ -489,11 +489,11 @@ func (a args) generate(outChan chan Out, input []byte) {
 }
 
 func createInput(a args) ([]byte, error) {
-	if a.infile == nil {
-		return ioutil.ReadAll(os.Stdin)
-	} else {
+	if a.infile != nil {
 		return ioutil.ReadFile(*a.infile)
 	}
+
+	return ioutil.ReadAll(os.Stdin)
 }
 
 func (a args) createOutFile() *os.File {
