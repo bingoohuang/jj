@@ -183,7 +183,7 @@ func (t Result) Time() time.Time {
 	return res
 }
 
-// Array returns back an array of values.
+// Array returns an array of values.
 // If the result represents a non-existent value, then an empty array will be
 // returned. If the result is not a JSON array, the return value will be an
 // array containing one result.
@@ -196,6 +196,11 @@ func (t Result) Array() []Result {
 	}
 	r := t.arrayOrMap('[', false)
 	return r.a
+}
+
+// IsJSON returns true if the result value is a JSON Object or JSON array.
+func (t Result) IsJSON() bool {
+	return t.Type == JSON && len(t.Raw) > 0 && (t.Raw[0] == '{' || t.Raw[0] == '[')
 }
 
 // IsObject returns true if the result value is a JSON object.
@@ -754,8 +759,7 @@ func parseArrayPath(path string) (r arrayPathResult) {
 				} else if path[1] == '[' || path[1] == '(' {
 					// query
 					r.query.on = true
-					qpath, op, value, _, fi, vesc, ok :=
-						parseQuery(path[i:])
+					qpath, op, value, _, fi, vesc, ok := parseQuery(path[i:])
 					if !ok {
 						// bad query, end now
 						break
