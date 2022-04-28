@@ -31,8 +31,7 @@ func TestLRU(t *testing.T) {
 	// Set items
 	var cache LRU
 	for i := 0; i < len(items); i++ {
-		prev, replaced, evictedKey, evictedValue, evicted :=
-			cache.SetEvicted(items[i].key, items[i].val)
+		prev, replaced, evictedKey, evictedValue, evicted := cache.SetEvicted(items[i].key, items[i].val)
 		if replaced {
 			t.Fatal("expected false")
 		}
@@ -143,8 +142,7 @@ func TestLRU(t *testing.T) {
 	for i := len(items) - size; i < len(items); i++ {
 		tprev := items[i].val
 		items[i].val = tprev + 1
-		prev, replaced, _, _, evicted :=
-			cache.SetEvicted(items[i].key, items[i].val)
+		prev, replaced, _, _, evicted := cache.SetEvicted(items[i].key, items[i].val)
 		if !replaced {
 			t.Fatal("expected true")
 		}

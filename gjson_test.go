@@ -844,7 +844,8 @@ func testMany(t *testing.T, json string, paths, expected []string) {
 }
 
 func testManyAny(t *testing.T, json string, paths, expected []string,
-	bytes bool) {
+	bytes bool,
+) {
 	var result []Result
 	for i := 0; i < 2; i++ {
 		var which string
@@ -1773,8 +1774,7 @@ func TestParseQuery(t *testing.T) {
 	var path, op, value, remain string
 	var ok bool
 
-	path, op, value, remain, _, _, ok =
-		parseQuery(`#(service_roles.#(=="one").()==asdf).cap`)
+	path, op, value, remain, _, _, ok = parseQuery(`#(service_roles.#(=="one").()==asdf).cap`)
 	assert(t, ok &&
 		path == `service_roles.#(=="one").()` &&
 		op == "=" &&
@@ -1802,8 +1802,7 @@ func TestParseQuery(t *testing.T) {
 		value == `` &&
 		remain == ``)
 
-	path, op, value, remain, _, _, ok =
-		parseQuery(`#(a\("\"(".#(=="o\"(ne")%"ab\")").remain`)
+	path, op, value, remain, _, _, ok = parseQuery(`#(a\("\"(".#(=="o\"(ne")%"ab\")").remain`)
 	assert(t, ok &&
 		path == `a\("\"(".#(=="o\"(ne")` &&
 		op == "%" &&

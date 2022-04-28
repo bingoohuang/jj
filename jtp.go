@@ -110,7 +110,8 @@ func validateStringLen(data []byte, startIndex, endIndex, maxAllowed int, strTyp
 
 // isValidateString checks if the string is valid or not
 func isValidateString(data []byte, i int) (outi int,
-	ok bool) {
+	ok bool,
+) {
 	for ; i < len(data); i++ {
 		if data[i] < ' ' {
 			return i, false

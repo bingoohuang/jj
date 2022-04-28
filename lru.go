@@ -62,7 +62,8 @@ func (lru *LRU) push(item *lruItem) {
 // Returns evicted items.
 // This operation will panic if the size is less than one.
 func (lru *LRU) Resize(size int) (evictedKeys []interface{},
-	evictedValues []interface{}) {
+	evictedValues []interface{},
+) {
 	lru.mu.Lock()
 	defer lru.mu.Unlock()
 	if size <= 0 {
@@ -88,7 +89,8 @@ func (lru *LRU) Len() int {
 // eviction then the evicted item is returned.
 func (lru *LRU) SetEvicted(key interface{}, value interface{}) (
 	prev interface{}, replaced bool, evictedKey interface{},
-	evictedValue interface{}, evicted bool) {
+	evictedValue interface{}, evicted bool,
+) {
 	lru.mu.Lock()
 	defer lru.mu.Unlock()
 	if lru.items == nil {
@@ -119,7 +121,8 @@ func (lru *LRU) SetEvicted(key interface{}, value interface{}) (
 
 // Set or replace a value for a key.
 func (lru *LRU) Set(key interface{}, value interface{}) (prev interface{},
-	replaced bool) {
+	replaced bool,
+) {
 	prev, replaced, _, _, _ = lru.SetEvicted(key, value)
 	return prev, replaced
 }
