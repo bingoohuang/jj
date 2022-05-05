@@ -747,7 +747,8 @@ func TestNewParse(t *testing.T) {
 }
 
 func TestUnmarshalMap(t *testing.T) {
-	m1 := Parse(exampleJSON).Value().(map[string]interface{})
+	parse := Parse(exampleJSON)
+	m1 := parse.Value().(map[string]interface{})
 	var m2 map[string]interface{}
 	if err := json.Unmarshal([]byte(exampleJSON), &m2); err != nil {
 		t.Fatal(err)
@@ -993,86 +994,86 @@ var complicatedJSON = `
 }
 `
 
-func testvalid(t *testing.T, json string, expect bool) {
+func testValid(t *testing.T, json string, expect bool) {
 	t.Helper()
-	_, ok := validpayload([]byte(json), 0)
+	_, _, ok := ValidPayload([]byte(json), 0)
 	if ok != expect {
 		t.Fatal("mismatch")
 	}
 }
 
 func TestValidBasic(t *testing.T) {
-	testvalid(t, "0", true)
-	testvalid(t, "00", false)
-	testvalid(t, "-00", false)
-	testvalid(t, "-.", false)
-	testvalid(t, "-.123", false)
-	testvalid(t, "0.0", true)
-	testvalid(t, "10.0", true)
-	testvalid(t, "10e1", true)
-	testvalid(t, "10EE", false)
-	testvalid(t, "10E-", false)
-	testvalid(t, "10E+", false)
-	testvalid(t, "10E123", true)
-	testvalid(t, "10E-123", true)
-	testvalid(t, "10E-0123", true)
-	testvalid(t, "", false)
-	testvalid(t, " ", false)
-	testvalid(t, "{}", true)
-	testvalid(t, "{", false)
-	testvalid(t, "-", false)
-	testvalid(t, "-1", true)
-	testvalid(t, "-1.", false)
-	testvalid(t, "-1.0", true)
-	testvalid(t, " -1.0", true)
-	testvalid(t, " -1.0 ", true)
-	testvalid(t, "-1.0 ", true)
-	testvalid(t, "-1.0 i", false)
-	testvalid(t, "-1.0 i", false)
-	testvalid(t, "true", true)
-	testvalid(t, " true", true)
-	testvalid(t, " true ", true)
-	testvalid(t, " True ", false)
-	testvalid(t, " tru", false)
-	testvalid(t, "false", true)
-	testvalid(t, " false", true)
-	testvalid(t, " false ", true)
-	testvalid(t, " False ", false)
-	testvalid(t, " fals", false)
-	testvalid(t, "null", true)
-	testvalid(t, " null", true)
-	testvalid(t, " null ", true)
-	testvalid(t, " Null ", false)
-	testvalid(t, " nul", false)
-	testvalid(t, " []", true)
-	testvalid(t, " [true]", true)
-	testvalid(t, " [ true, null ]", true)
-	testvalid(t, " [ true,]", false)
-	testvalid(t, `{"hello":"world"}`, true)
-	testvalid(t, `{ "hello": "world" }`, true)
-	testvalid(t, `{ "hello": "world", }`, false)
-	testvalid(t, `{"a":"b",}`, false)
-	testvalid(t, `{"a":"b","a"}`, false)
-	testvalid(t, `{"a":"b","a":}`, false)
-	testvalid(t, `{"a":"b","a":1}`, true)
-	testvalid(t, `{"a":"b",2"1":2}`, false)
-	testvalid(t, `{"a":"b","a": 1, "c":{"hi":"there"} }`, true)
-	testvalid(t, `{"a":"b","a": 1, "c":{"hi":"there", "easy":["going",`+
+	testValid(t, "0", true)
+	testValid(t, "00", false)
+	testValid(t, "-00", false)
+	testValid(t, "-.", false)
+	testValid(t, "-.123", false)
+	testValid(t, "0.0", true)
+	testValid(t, "10.0", true)
+	testValid(t, "10e1", true)
+	testValid(t, "10EE", false)
+	testValid(t, "10E-", false)
+	testValid(t, "10E+", false)
+	testValid(t, "10E123", true)
+	testValid(t, "10E-123", true)
+	testValid(t, "10E-0123", true)
+	testValid(t, "", false)
+	testValid(t, " ", false)
+	testValid(t, "{}", true)
+	testValid(t, "{", false)
+	testValid(t, "-", false)
+	testValid(t, "-1", true)
+	testValid(t, "-1.", false)
+	testValid(t, "-1.0", true)
+	testValid(t, " -1.0", true)
+	testValid(t, " -1.0 ", true)
+	testValid(t, "-1.0 ", true)
+	testValid(t, "-1.0 i", false)
+	testValid(t, "-1.0 i", false)
+	testValid(t, "true", true)
+	testValid(t, " true", true)
+	testValid(t, " true ", true)
+	testValid(t, " True ", false)
+	testValid(t, " tru", false)
+	testValid(t, "false", true)
+	testValid(t, " false", true)
+	testValid(t, " false ", true)
+	testValid(t, " False ", false)
+	testValid(t, " fals", false)
+	testValid(t, "null", true)
+	testValid(t, " null", true)
+	testValid(t, " null ", true)
+	testValid(t, " Null ", false)
+	testValid(t, " nul", false)
+	testValid(t, " []", true)
+	testValid(t, " [true]", true)
+	testValid(t, " [ true, null ]", true)
+	testValid(t, " [ true,]", false)
+	testValid(t, `{"hello":"world"}`, true)
+	testValid(t, `{ "hello": "world" }`, true)
+	testValid(t, `{ "hello": "world", }`, false)
+	testValid(t, `{"a":"b",}`, false)
+	testValid(t, `{"a":"b","a"}`, false)
+	testValid(t, `{"a":"b","a":}`, false)
+	testValid(t, `{"a":"b","a":1}`, true)
+	testValid(t, `{"a":"b",2"1":2}`, false)
+	testValid(t, `{"a":"b","a": 1, "c":{"hi":"there"} }`, true)
+	testValid(t, `{"a":"b","a": 1, "c":{"hi":"there", "easy":["going",`+
 		`{"mixed":"bag"}]} }`, true)
-	testvalid(t, `""`, true)
-	testvalid(t, `"`, false)
-	testvalid(t, `"\n"`, true)
-	testvalid(t, `"\"`, false)
-	testvalid(t, `"\\"`, true)
-	testvalid(t, `"a\\b"`, true)
-	testvalid(t, `"a\\b\\\"a"`, true)
-	testvalid(t, `"a\\b\\\uFFAAa"`, true)
-	testvalid(t, `"a\\b\\\uFFAZa"`, false)
-	testvalid(t, `"a\\b\\\uFFA"`, false)
-	testvalid(t, string(complicatedJSON), true)
-	testvalid(t, string(exampleJSON), true)
-	testvalid(t, "[-]", false)
-	testvalid(t, "[-.123]", false)
+	testValid(t, `""`, true)
+	testValid(t, `"`, false)
+	testValid(t, `"\n"`, true)
+	testValid(t, `"\"`, false)
+	testValid(t, `"\\"`, true)
+	testValid(t, `"a\\b"`, true)
+	testValid(t, `"a\\b\\\"a"`, true)
+	testValid(t, `"a\\b\\\uFFAAa"`, true)
+	testValid(t, `"a\\b\\\uFFAZa"`, false)
+	testValid(t, `"a\\b\\\uFFA"`, false)
+	testValid(t, string(complicatedJSON), true)
+	testValid(t, string(exampleJSON), true)
+	testValid(t, "[-]", false)
+	testValid(t, "[-.123]", false)
 }
 
 var jsonchars = []string{
@@ -1095,14 +1096,14 @@ func TestValidRandom(t *testing.T) {
 	for time.Since(start) < time.Second*3 {
 		n := rand.Int() % len(b)
 		rand.Read(b[:n])
-		validpayload(b[:n], 0)
+		ValidPayload(b[:n], 0)
 	}
 
 	start = time.Now()
 	for time.Since(start) < time.Second*3 {
 		n := rand.Int() % len(b)
 		makeRandomJSONChars(b[:n])
-		validpayload(b[:n], 0)
+		ValidPayload(b[:n], 0)
 	}
 }
 
@@ -1312,6 +1313,12 @@ func TestDuplicateKeys(t *testing.T) {
 	if !Valid(json) {
 		t.Fatal("should be valid")
 	}
+}
+
+func TestValidPayload(t *testing.T) {
+	data := []byte(`{"age":10}` + "\n" + `{"age":20}`)
+	typ, outi, ok := ValidPayload(data, 0)
+	fmt.Println(typ, outi, ok)
 }
 
 func TestArrayValues(t *testing.T) {

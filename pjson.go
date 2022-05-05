@@ -97,7 +97,7 @@ func isstrtok(ch byte) bool {
 
 const unroll = true
 
-// validstring - the prefix '"' character has already been processed
+// validString - the prefix '"' character has already been processed
 func vstring(json []byte, i int) (outi, info int, ok, stop bool) {
 	for {
 		if unroll {

@@ -430,7 +430,8 @@ end:
 // use the Valid function first.
 func Parse(json string) Result {
 	var value Result
-	for i := 0; i < len(json); i++ {
+	i := 0
+	for ; i < len(json); i++ {
 		if json[i] == '{' || json[i] == '[' {
 			value.Type = JSON
 			value.Raw = json[i:] // just take the entire raw
@@ -1992,8 +1993,8 @@ func GetBytes(json []byte, path string, optionsFns ...PathOptionFn) Result {
 	return getBytes(json, path, optionsFns...)
 }
 
-// runeit returns the rune from the the \uXXXX
-func runeit(json string) rune {
+// runeIt returns the rune from the the \uXXXX
+func runeIt(json string) rune {
 	n, _ := strconv.ParseUint(json[:4], 16, 64)
 	return rune(n)
 }
@@ -2035,14 +2036,14 @@ func unescape(json string) string {
 				if i+5 > len(json) {
 					return string(str)
 				}
-				r := runeit(json[i+1:])
+				r := runeIt(json[i+1:])
 				i += 5
 				if utf16.IsSurrogate(r) {
 					// need another code
 					if len(json[i:]) >= 6 && json[i] == '\\' &&
 						json[i+1] == 'u' {
 						// we expect it to be correct so just consume it
-						r = utf16.DecodeRune(r, runeit(json[i+2:]))
+						r = utf16.DecodeRune(r, runeIt(json[i+2:]))
 						i += 6
 					}
 				}
@@ -2207,57 +2208,64 @@ func GetManyBytes(json []byte, path ...string) []Result {
 	return res
 }
 
-func validpayload(data []byte, i int) (outi int, ok bool) {
+func ValidPayload(data []byte, i int) (typ Type, outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
 		default:
-			i, ok = validany(data, i)
+			typ, i, ok = validAny(data, i)
 			if !ok {
-				return i, false
+				return typ, i, false
 			}
 			for ; i < len(data); i++ {
 				switch data[i] {
 				default:
-					return i, false
+					return typ, i, false
 				case ' ', '\t', '\n', '\r':
 					continue
 				}
 			}
-			return i, true
+			return typ, i, true
 		case ' ', '\t', '\n', '\r':
 			continue
 		}
 	}
-	return i, false
+	return Null, i, false
 }
 
-func validany(data []byte, i int) (outi int, ok bool) {
+func validAny(data []byte, i int) (typ Type, outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
 		default:
-			return i, false
+			return typ, i, false
 		case ' ', '\t', '\n', '\r':
 			continue
 		case '{':
-			return validobject(data, i+1)
+			outi, ok = validObject(data, i+1)
+			return JSON, outi, ok
 		case '[':
-			return validarray(data, i+1)
+			outi, ok = validArray(data, i+1)
+			return JSON, outi, ok
 		case '"':
-			return validstring(data, i+1)
+			outi, ok = validString(data, i+1)
+			return String, outi, ok
 		case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			return validnumber(data, i+1)
+			outi, ok = validNumber(data, i+1)
+			return Number, outi, ok
 		case 't':
-			return validtrue(data, i+1)
+			outi, ok = validTrue(data, i+1)
+			return True, outi, ok
 		case 'f':
-			return validfalse(data, i+1)
+			outi, ok = validFalse(data, i+1)
+			return False, outi, ok
 		case 'n':
-			return validnull(data, i+1)
+			outi, ok = validNull(data, i+1)
+			return Null, outi, ok
 		}
 	}
-	return i, false
+	return Null, i, false
 }
 
-func validobject(data []byte, i int) (outi int, ok bool) {
+func validObject(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
 		default:
@@ -2268,16 +2276,16 @@ func validobject(data []byte, i int) (outi int, ok bool) {
 			return i + 1, true
 		case '"':
 		key:
-			if i, ok = validstring(data, i+1); !ok {
+			if i, ok = validString(data, i+1); !ok {
 				return i, false
 			}
-			if i, ok = validcolon(data, i); !ok {
+			if i, ok = validColon(data, i); !ok {
 				return i, false
 			}
-			if i, ok = validany(data, i); !ok {
+			if _, i, ok = validAny(data, i); !ok {
 				return i, false
 			}
-			if i, ok = validcomma(data, i, '}'); !ok {
+			if i, ok = validComma(data, i, '}'); !ok {
 				return i, false
 			}
 			if data[i] == '}' {
@@ -2300,7 +2308,7 @@ func validobject(data []byte, i int) (outi int, ok bool) {
 	return i, false
 }
 
-func validcolon(data []byte, i int) (outi int, ok bool) {
+func validColon(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
 		default:
@@ -2314,7 +2322,7 @@ func validcolon(data []byte, i int) (outi int, ok bool) {
 	return i, false
 }
 
-func validcomma(data []byte, i int, end byte) (outi int, ok bool) {
+func validComma(data []byte, i int, end byte) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
 		default:
@@ -2330,15 +2338,15 @@ func validcomma(data []byte, i int, end byte) (outi int, ok bool) {
 	return i, false
 }
 
-func validarray(data []byte, i int) (outi int, ok bool) {
+func validArray(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
 		default:
 			for ; i < len(data); i++ {
-				if i, ok = validany(data, i); !ok {
+				if _, i, ok = validAny(data, i); !ok {
 					return i, false
 				}
-				if i, ok = validcomma(data, i, ']'); !ok {
+				if i, ok = validComma(data, i, ']'); !ok {
 					return i, false
 				}
 				if data[i] == ']' {
@@ -2354,7 +2362,7 @@ func validarray(data []byte, i int) (outi int, ok bool) {
 	return i, false
 }
 
-func validstring(data []byte, i int) (outi int, ok bool) {
+func validString(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		if data[i] < ' ' {
 			return i, false
@@ -2387,7 +2395,7 @@ func validstring(data []byte, i int) (outi int, ok bool) {
 	return i, false
 }
 
-func validnumber(data []byte, i int) (outi int, ok bool) {
+func validNumber(data []byte, i int) (outi int, ok bool) {
 	i--
 	// sign
 	if data[i] == '-' {
@@ -2462,7 +2470,7 @@ func validnumber(data []byte, i int) (outi int, ok bool) {
 	return i, true
 }
 
-func validtrue(data []byte, i int) (outi int, ok bool) {
+func validTrue(data []byte, i int) (outi int, ok bool) {
 	if i+3 <= len(data) && data[i] == 'r' && data[i+1] == 'u' &&
 		data[i+2] == 'e' {
 		return i + 3, true
@@ -2470,7 +2478,7 @@ func validtrue(data []byte, i int) (outi int, ok bool) {
 	return i, false
 }
 
-func validfalse(data []byte, i int) (outi int, ok bool) {
+func validFalse(data []byte, i int) (outi int, ok bool) {
 	if i+4 <= len(data) && data[i] == 'a' && data[i+1] == 'l' &&
 		data[i+2] == 's' && data[i+3] == 'e' {
 		return i + 4, true
@@ -2478,7 +2486,7 @@ func validfalse(data []byte, i int) (outi int, ok bool) {
 	return i, false
 }
 
-func validnull(data []byte, i int) (outi int, ok bool) {
+func validNull(data []byte, i int) (outi int, ok bool) {
 	if i+3 <= len(data) && data[i] == 'u' && data[i+1] == 'l' &&
 		data[i+2] == 'l' {
 		return i + 3, true
@@ -2494,7 +2502,7 @@ func validnull(data []byte, i int) (outi int, ok bool) {
 //  value := jj.Get(json, "name.last")
 //
 func Valid(json string) bool {
-	_, ok := validpayload(stringBytes(json), 0)
+	_, _, ok := ValidPayload(stringBytes(json), 0)
 	return ok
 }
 
@@ -2508,7 +2516,7 @@ func Valid(json string) bool {
 // If working with bytes, this method preferred over ValidBytes(string(data))
 //
 func ValidBytes(json []byte) bool {
-	_, ok := validpayload(json, 0)
+	_, _, ok := ValidPayload(json, 0)
 	return ok
 }
 
