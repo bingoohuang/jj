@@ -522,6 +522,9 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 				dst = append(dst, style.Key[0]...)
 			} else {
 				dst = append(dst, style.String[0]...)
+				if colorOption.CountEntries && len(stack) > 0 {
+					stack[len(stack)-1].entries++
+				}
 			}
 			dst = apnd(dst, '"')
 			esc := false
@@ -576,15 +579,12 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 			} else {
 				dst = append(dst, style.String[1]...)
 			}
-			if colorOption.CountEntries && len(stack) > 0 && stack[len(stack)-1].kind == '[' {
-				stack[len(stack)-1].entries++
-			}
 		} else if c == '{' || c == '[' {
 			dst = apnd(dst, c)
 			stack = append(stack, stackt{kind: c, key: c == '{', dstPos: len(dst)})
 		} else if (c == '}' || c == ']') && len(stack) > 0 {
 			if colorOption.CountEntries {
-				if len(stack) > 1 && stack[len(stack)-2].kind == '[' {
+				if len(stack) > 1 {
 					stack[len(stack)-2].entries++
 				}
 
@@ -605,9 +605,6 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 		} else if (c == ':' || c == ',') && len(stack) > 0 && stack[len(stack)-1].kind == '{' {
 			stack[len(stack)-1].key = !stack[len(stack)-1].key
 			dst = apnd(dst, c)
-			if colorOption.CountEntries && c == ':' {
-				stack[len(stack)-1].entries++
-			}
 		} else {
 			var kind byte
 			if (c >= '0' && c <= '9') || c == '-' || isNaNOrInf(src[i:]) {
@@ -629,16 +626,18 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 			FOR:
 				for ; i < len(src); i++ {
 					switch src[i] {
-					case ',':
-						if colorOption.CountEntries && len(stack) > 0 {
-							stack[len(stack)-1].entries++
-						}
-						fallthrough
-					case ' ', ':', ']', '}':
+					case ' ', ':', ',', ']', '}':
 						i--
 						break FOR
 					}
 					dst = apnd(dst, src[i])
+				}
+
+				switch kind {
+				case '0', 't', 'f', 'n':
+					if colorOption.CountEntries && len(stack) > 0 {
+						stack[len(stack)-1].entries++
+					}
 				}
 
 				switch kind {
