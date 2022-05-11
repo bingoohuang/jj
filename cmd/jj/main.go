@@ -32,6 +32,7 @@ eg.: jj keypath                      read value from stdin
 options:
      -v value   Edit JSON key path value
      -c         Print cheatsheet
+     -C         Print items counting in colored output
      -u         Make json ugly, keypath is optional
      -R         Create a random json
      -r         Use raw values, otherwise types are auto-detected
@@ -59,6 +60,7 @@ type args struct {
 	raw, del, opt, keypathok, random      bool
 	ugly, notty, lines, rawKey, gen, expr bool
 	iterateArray, parseInnerJSONString    bool
+	countingItems                         bool
 
 	jsonMap map[string]interface{}
 }
@@ -97,6 +99,8 @@ func parseArgs() args {
 						a.raw = true
 					case 'R':
 						a.random = true
+					case 'C':
+						a.countingItems = true
 					case 'O':
 						a.opt = true
 					case 'D':
@@ -536,7 +540,7 @@ func (a args) modifyOutput(f *os.File, out Out) []byte {
 
 	if !a.notty && isatty.IsTerminal(f.Fd()) {
 		if a.raw || out.Type != jj.String {
-			out.Data = jj.Color(out.Data, jj.TerminalStyle)
+			out.Data = jj.Color(out.Data, jj.TerminalStyle, &jj.ColorOption{CountEntries: a.countingItems})
 		} else {
 			out.Data = append([]byte(jj.TerminalStyle.String[0]), out.Data...)
 			out.Data = append(out.Data, jj.TerminalStyle.String[1]...)

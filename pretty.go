@@ -3,6 +3,7 @@ package jj
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strconv"
 )
@@ -448,6 +449,7 @@ type Style struct {
 	Key, String, Number [2]string
 	True, False, Null   [2]string
 	Escape              [2]string
+	Remark              [2]string
 	Append              func(dst []byte, c byte) []byte
 }
 
@@ -472,6 +474,7 @@ func init() {
 		False:  [2]string{"\x1B[96m", "\x1B[0m"},
 		Null:   [2]string{"\x1B[91m", "\x1B[0m"},
 		Escape: [2]string{"\x1B[35m", "\x1B[0m"},
+		Remark: [2]string{"\x1B[90m", "\x1B[0m"},
 		Append: func(dst []byte, c byte) []byte {
 			if c < ' ' && (c != '\r' && c != '\n' && c != '\t' && c != '\v') {
 				dst = append(dst, "\\u00"...)
@@ -483,10 +486,17 @@ func init() {
 	}
 }
 
+type ColorOption struct {
+	CountEntries bool
+}
+
 // Color will colorize the json. The style parma is used for customizing
 // the colors. Passing nil to the style param will use the default
 // TerminalStyle.
-func Color(src []byte, style *Style) []byte {
+func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
+	if colorOption == nil {
+		colorOption = &ColorOption{}
+	}
 	if style == nil {
 		style = TerminalStyle
 	}
@@ -497,8 +507,10 @@ func Color(src []byte, style *Style) []byte {
 		}
 	}
 	type stackt struct {
-		kind byte
-		key  bool
+		kind    byte
+		key     bool
+		dstPos  int
+		entries int
 	}
 	var dst []byte
 	var stack []stackt
@@ -564,15 +576,34 @@ func Color(src []byte, style *Style) []byte {
 			} else {
 				dst = append(dst, style.String[1]...)
 			}
+			if len(stack) > 0 && stack[len(stack)-1].kind == '[' {
+				stack[len(stack)-1].entries++
+			}
 		} else if c == '{' || c == '[' {
-			stack = append(stack, stackt{c, c == '{'})
 			dst = apnd(dst, c)
+			stack = append(stack, stackt{kind: c, key: c == '{', dstPos: len(dst)})
 		} else if (c == '}' || c == ']') && len(stack) > 0 {
+			if colorOption.CountEntries {
+				pop := stack[len(stack)-1]
+				var remark []byte
+				remark = append(remark, style.Remark[0]...)
+				remark = append(remark, []byte(fmt.Sprintf(" (%d items) ", pop.entries))...)
+				remark = append(remark, style.Remark[1]...)
+				var dst2 []byte
+				dst2 = append(dst2, dst[:pop.dstPos]...)
+				dst2 = append(dst2, remark...)
+				dst2 = append(dst2, dst[pop.dstPos:]...)
+				dst = dst2
+			}
+
 			stack = stack[:len(stack)-1]
 			dst = apnd(dst, c)
 		} else if (c == ':' || c == ',') && len(stack) > 0 && stack[len(stack)-1].kind == '{' {
 			stack[len(stack)-1].key = !stack[len(stack)-1].key
 			dst = apnd(dst, c)
+			if c == ':' {
+				stack[len(stack)-1].entries++
+			}
 		} else {
 			var kind byte
 			if (c >= '0' && c <= '9') || c == '-' || isNaNOrInf(src[i:]) {
@@ -600,6 +631,7 @@ func Color(src []byte, style *Style) []byte {
 					}
 					dst = apnd(dst, src[i])
 				}
+
 				switch kind {
 				case '0':
 					dst = append(dst, style.Number[1]...)
@@ -609,6 +641,13 @@ func Color(src []byte, style *Style) []byte {
 					dst = append(dst, style.False[1]...)
 				case 'n':
 					dst = append(dst, style.Null[1]...)
+				}
+
+				switch kind {
+				case '0', 't', 'f', 'n':
+					if len(stack) > 0 && stack[len(stack)-1].kind == '[' {
+						stack[len(stack)-1].entries++
+					}
 				}
 			}
 		}
