@@ -629,7 +629,12 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 			FOR:
 				for ; i < len(src); i++ {
 					switch src[i] {
-					case ' ', ',', ':', ']', '}':
+					case ',':
+						if colorOption.CountEntries && len(stack) > 0 {
+							stack[len(stack)-1].entries++
+						}
+						fallthrough
+					case ' ', ':', ']', '}':
 						i--
 						break FOR
 					}
