@@ -576,7 +576,7 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 			} else {
 				dst = append(dst, style.String[1]...)
 			}
-			if len(stack) > 0 && stack[len(stack)-1].kind == '[' {
+			if colorOption.CountEntries && len(stack) > 0 && stack[len(stack)-1].kind == '[' {
 				stack[len(stack)-1].entries++
 			}
 		} else if c == '{' || c == '[' {
@@ -584,6 +584,10 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 			stack = append(stack, stackt{kind: c, key: c == '{', dstPos: len(dst)})
 		} else if (c == '}' || c == ']') && len(stack) > 0 {
 			if colorOption.CountEntries {
+				if len(stack) > 1 && stack[len(stack)-2].kind == '[' {
+					stack[len(stack)-2].entries++
+				}
+
 				pop := stack[len(stack)-1]
 				var remark []byte
 				remark = append(remark, style.Remark[0]...)
@@ -601,7 +605,7 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 		} else if (c == ':' || c == ',') && len(stack) > 0 && stack[len(stack)-1].kind == '{' {
 			stack[len(stack)-1].key = !stack[len(stack)-1].key
 			dst = apnd(dst, c)
-			if c == ':' {
+			if colorOption.CountEntries && c == ':' {
 				stack[len(stack)-1].entries++
 			}
 		} else {
@@ -641,13 +645,6 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 					dst = append(dst, style.False[1]...)
 				case 'n':
 					dst = append(dst, style.Null[1]...)
-				}
-
-				switch kind {
-				case '0', 't', 'f', 'n':
-					if len(stack) > 0 && stack[len(stack)-1].kind == '[' {
-						stack[len(stack)-1].entries++
-					}
 				}
 			}
 		}
