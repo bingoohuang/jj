@@ -509,7 +509,6 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 	type stackt struct {
 		kind    byte
 		key     bool
-		dstPos  int
 		entries int
 	}
 	var dst []byte
@@ -581,27 +580,20 @@ func Color(src []byte, style *Style, colorOption *ColorOption) []byte {
 			}
 		} else if c == '{' || c == '[' {
 			dst = apnd(dst, c)
-			stack = append(stack, stackt{kind: c, key: c == '{', dstPos: len(dst)})
+			stack = append(stack, stackt{kind: c, key: c == '{'})
 		} else if (c == '}' || c == ']') && len(stack) > 0 {
-			if colorOption.CountEntries {
-				if len(stack) > 1 {
-					stack[len(stack)-2].entries++
-				}
-
-				pop := stack[len(stack)-1]
-				var remark []byte
-				remark = append(remark, style.Remark[0]...)
-				remark = append(remark, []byte(fmt.Sprintf(" (%d items) ", pop.entries))...)
-				remark = append(remark, style.Remark[1]...)
-				var dst2 []byte
-				dst2 = append(dst2, dst[:pop.dstPos]...)
-				dst2 = append(dst2, remark...)
-				dst2 = append(dst2, dst[pop.dstPos:]...)
-				dst = dst2
-			}
-
+			pop := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			dst = apnd(dst, c)
+			if colorOption.CountEntries {
+				if len(stack) > 0 {
+					stack[len(stack)-1].entries++
+				}
+
+				dst = append(dst, style.Remark[0]...)
+				dst = append(dst, []byte(fmt.Sprintf(" (%d items) ", pop.entries))...)
+				dst = append(dst, style.Remark[1]...)
+			}
 		} else if (c == ':' || c == ',') && len(stack) > 0 && stack[len(stack)-1].kind == '{' {
 			stack[len(stack)-1].key = !stack[len(stack)-1].key
 			dst = apnd(dst, c)
