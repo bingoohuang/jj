@@ -34,7 +34,7 @@ options:
      -c         Print cheatsheet
      -C         Print items counting in colored output
      -u         Make json ugly, keypath is optional
-     -R         Create a random json
+     -R         Create a random json, use env JJ_N for #element, e.g. JJ_N=10 jj -R
      -r         Use raw values, otherwise types are auto-detected
      -n         Do not modifyOutput color or extra formatting
      -O         Performance boost for value updates
@@ -42,7 +42,7 @@ options:
      -l         Output array values on multiple lines
      -I         Print each child of json array
      -i infile  Use input file instead of stdin
-     -g         Generate random JSON by input
+     -g         Generate random JSON by input, use env JJ_N for more times, e.g. JJ_N=3 jj -gu name=@name
      -e         Eval keypath value as an expression
      -p         Parse inner JSON string as a JSON
      -o outfile Use modifyOutput file instead of stdout
@@ -357,7 +357,7 @@ func (a args) randomJSON(outChan chan Out) {
 	rand.Seed(time.Now().UnixNano())
 	randOptions := jj.DefaultRandOptions
 	randOptions.Pretty = false
-	if j := os.Getenv("JJ_DEPTH"); j != "" {
+	if j := os.Getenv("JJ_N"); j != "" {
 		if k := ss.ParseInt(j); k > 0 {
 			randOptions.Depth = k
 		}
