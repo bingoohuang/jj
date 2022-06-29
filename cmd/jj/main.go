@@ -476,17 +476,33 @@ func (a args) assignOut(out *Out, res jj.Result) {
 	}
 }
 
+func GetEnvInt(name string, defaultValue int) int {
+	s := os.Getenv(name)
+	if s == "" {
+		return defaultValue
+	}
+
+	if ev, err := ss.ParseIntE(s); err == nil {
+		return ev
+	}
+
+	return defaultValue
+}
+
 func (a args) generate(outChan chan Out, input []byte) {
 	gen := jj.NewGen()
-	s := string(input)
-	for {
-		genResult, i := gen.Process(s)
-		if i <= 0 {
-			break
-		}
 
-		outChan <- Out{Data: []byte(genResult.Out)}
-		s = s[i:]
+	for j := 0; j < GetEnvInt(`JJ_N`, 1); j++ {
+		s := string(input)
+		for {
+			genResult, i := gen.Process(s)
+			if i <= 0 {
+				break
+			}
+
+			outChan <- Out{Data: []byte(genResult.Out)}
+			s = s[i:]
+		}
 	}
 
 	close(outChan)
