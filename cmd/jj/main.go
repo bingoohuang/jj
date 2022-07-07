@@ -357,13 +357,24 @@ func (a args) randomJSON(outChan chan Out) {
 	rand.Seed(time.Now().UnixNano())
 	randOptions := jj.DefaultRandOptions
 	randOptions.Pretty = false
+	times := 1
 	if j := os.Getenv("JJ_N"); j != "" {
+		if strings.Contains(j, ",") {
+			k := strings.IndexByte(j, ',')
+			if times = ss.ParseInt(j[:k]); times < 1 {
+				times = 1
+			}
+			j = j[k+1:]
+		}
 		if k := ss.ParseInt(j); k > 0 {
 			randOptions.Depth = k
 		}
 	}
 
-	outChan <- Out{Data: jj.Rand(randOptions)}
+	for i := 0; i < times; i++ {
+		outChan <- Out{Data: jj.Rand(randOptions)}
+	}
+
 	close(outChan)
 }
 

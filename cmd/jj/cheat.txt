@@ -68,3 +68,4 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
      more expression syntax, go https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
 35. $ echo '{"body":"{\\"_hl\\": \\"mockbin\\"}"}' | jj -pu     =>  {"body":{"_hl":"mockbin"}}
 36. $ JJ_N=10 jj -R => create random json object with 10 elements.
+37. $ JJ_N=10,5 jj -Ru => create 5 random json objects, each one has 10 elements.

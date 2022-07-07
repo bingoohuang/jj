@@ -1,5 +1,6 @@
 # changes
 
+1. 2022年07月07日 `JJ_N=10,5 jj -Ru`  生成10行随机JSON，每行JSON有5个元素
 1. 2022年06月29日 `JJ_N=3 jj -gu name=@姓名 'sex=@random(男,女)' addr=@地址 idcard=@身份证`
 
     ```sh
