@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 
 	"github.com/Pallinder/go-randomdata"
 	"github.com/bingoohuang/gg/pkg/chinaid"
+	"github.com/bingoohuang/gg/pkg/osx/env"
 	"github.com/bingoohuang/gg/pkg/randx"
 	"github.com/bingoohuang/gg/pkg/ss"
 	"github.com/bingoohuang/gg/pkg/timex"
@@ -29,7 +31,7 @@ import (
 	"github.com/bingoohuang/jj/reggen"
 )
 
-var DefaultSubstituteFns = SubstituteFnMap(map[string]SubstitutionFn{
+var DefaultSubstituteFns = NewSubstituter(map[string]interface{}{
 	"random":       Random,
 	"random_int":   RandomInt,
 	"random_bool":  func(_ string) interface{} { return randx.Bool() },
@@ -41,15 +43,16 @@ var DefaultSubstituteFns = SubstituteFnMap(map[string]SubstitutionFn{
 	"base64":       RandomBase64, // @base64(size=1000 std raw file=dir/f.png)
 	"name":         func(_ string) interface{} { return randomdata.SillyName() },
 	"ksuid":        func(_ string) interface{} { v, _ := uid.NewRandom(); return v.String() },
-	"汉字":           func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
-	"姓名":           func(_ string) interface{} { return chinaid.Name() },
-	"性别":           func(_ string) interface{} { return chinaid.Sex() },
-	"地址":           func(_ string) interface{} { return chinaid.Address() },
-	"手机":           func(_ string) interface{} { return chinaid.Mobile() },
-	"身份证":          func(_ string) interface{} { return chinaid.ChinaID() },
-	"发证机关":         func(_ string) interface{} { return chinaid.IssueOrg() },
-	"邮箱":           func(_ string) interface{} { return chinaid.Email() },
-	"银行卡":          func(_ string) interface{} { return chinaid.BankNo() },
+	"汉字":         func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
+	"姓名":         func(_ string) interface{} { return chinaid.Name() },
+	"性别":         func(_ string) interface{} { return chinaid.Sex() },
+	"地址":         func(_ string) interface{} { return chinaid.Address() },
+	"手机":         func(_ string) interface{} { return chinaid.Mobile() },
+	"身份证":       func(_ string) interface{} { return chinaid.ChinaID() },
+	"发证机关":     func(_ string) interface{} { return chinaid.IssueOrg() },
+	"邮箱":         func(_ string) interface{} { return chinaid.Email() },
+	"银行卡":       func(_ string) interface{} { return chinaid.BankNo() },
+	"seq":          SubstitutionFnGen(SeqGenerator),
 })
 
 // RandomImage creates a random image.
@@ -109,13 +112,23 @@ func parseImageSize(val string) (width, height int) {
 	return width, height
 }
 
-type SubstituteFnMap map[string]SubstitutionFn
+type Substituter struct {
+	raw     map[string]interface{}
+	gen     map[string]SubstitutionFn
+	genLock sync.RWMutex
+}
 
-func (r SubstituteFnMap) Register(fn string, f SubstitutionFn) { r[fn] = f }
+func NewSubstituter(m map[string]interface{}) *Substituter {
+	return &Substituter{
+		raw: m,
+		gen: map[string]SubstitutionFn{},
+	}
+}
+func (r *Substituter) Register(fn string, f interface{}) { r.raw[fn] = f }
 
 type Substitute interface {
 	vars.Valuer
-	Register(fn string, f SubstitutionFn)
+	Register(fn string, f interface{})
 }
 
 type GenRun struct {
@@ -255,9 +268,39 @@ func (r *GenRun) repeatStr(element string) {
 	r.repeater = nil
 }
 
-func (r SubstituteFnMap) Value(name, params string) interface{} {
-	if f, ok := r[name]; ok {
+func (r *Substituter) Value(name, params string) interface{} {
+	r.genLock.RLock()
+	if f, ok := r.gen[name]; ok {
 		return f(params)
+	}
+	r.genLock.RUnlock()
+
+	r.genLock.Lock()
+	defer r.genLock.Unlock()
+
+	if f, ok := r.gen[name]; ok {
+		return f(params)
+	}
+
+	if g, ok := r.raw[name]; ok {
+		if gt, ok := g.(SubstitutionFnGen); ok {
+			f := gt(params)
+			r.gen[name] = f
+			return f(params)
+		}
+		if gt, ok := g.(func(args string) func(args string) interface{}); ok {
+			f := gt(params)
+			r.gen[name] = f
+			return f(params)
+		}
+		if gt, ok := g.(SubstitutionFn); ok {
+			r.gen[name] = gt
+			return gt(params)
+		}
+		if gt, ok := g.(func(args string) interface{}); ok {
+			r.gen[name] = gt
+			return gt(params)
+		}
 	}
 
 	return ""
@@ -313,8 +356,9 @@ func parseRandSize(s string) (from, to, time int64, err error) {
 }
 
 type SubstitutionFn func(args string) interface{}
+type SubstitutionFnGen func(args string) func(args string) interface{}
 
-func (r *GenContext) RegisterFn(fn string, f SubstitutionFn) { r.Substitute.Register(fn, f) }
+func (r *GenContext) RegisterFn(fn string, f interface{}) { r.Substitute.Register(fn, f) }
 
 func Gen(src string) string { return DefaultGen.Gen(src) }
 
@@ -410,6 +454,27 @@ func filter(pp []string, s string) (filtered []string, found bool) {
 		}
 	}
 	return
+}
+
+var SeqStart = uint64(env.Int("SEQ", 0))
+
+func SeqGenerator(args string) func(args string) interface{} {
+	if args == "" {
+		return func(args string) interface{} {
+			return atomic.AddUint64(&SeqStart, 1)
+		}
+	}
+
+	if i, err := strconv.ParseUint(args, 10, 64); err == nil {
+		return func(args string) interface{} {
+			return atomic.AddUint64(&i, 1)
+		}
+	}
+
+	log.Printf("bad argument %s for @seq, should use int like @seq(1000)", args)
+	return func(args string) interface{} {
+		return 0
+	}
 }
 
 func RandomInt(args string) interface{} {
@@ -687,11 +752,11 @@ type UUID [16]byte
 //
 // A note about uniqueness derived from the UUID Wikipedia entry:
 //
-//  Randomly generated UUIDs have 122 random bits.  One's annual risk of being
-//  hit by a meteorite is estimated to be one chance in 17 billion, that
-//  means the probability is about 0.00000000006 (6 × 10−11),
-//  equivalent to the odds of creating a few tens of trillions of UUIDs in a
-//  year and having one duplicate.
+//	Randomly generated UUIDs have 122 random bits.  One's annual risk of being
+//	hit by a meteorite is estimated to be one chance in 17 billion, that
+//	means the probability is about 0.00000000006 (6 × 10−11),
+//	equivalent to the odds of creating a few tens of trillions of UUIDs in a
+//	year and having one duplicate.
 func NewRandomUUID() (UUID, error) {
 	return NewRandomUUIDFromReader(rander)
 }
