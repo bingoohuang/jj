@@ -43,15 +43,15 @@ var DefaultSubstituteFns = NewSubstituter(map[string]interface{}{
 	"base64":       RandomBase64, // @base64(size=1000 std raw file=dir/f.png)
 	"name":         func(_ string) interface{} { return randomdata.SillyName() },
 	"ksuid":        func(_ string) interface{} { v, _ := uid.NewRandom(); return v.String() },
-	"汉字":         func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
-	"姓名":         func(_ string) interface{} { return chinaid.Name() },
-	"性别":         func(_ string) interface{} { return chinaid.Sex() },
-	"地址":         func(_ string) interface{} { return chinaid.Address() },
-	"手机":         func(_ string) interface{} { return chinaid.Mobile() },
-	"身份证":       func(_ string) interface{} { return chinaid.ChinaID() },
-	"发证机关":     func(_ string) interface{} { return chinaid.IssueOrg() },
-	"邮箱":         func(_ string) interface{} { return chinaid.Email() },
-	"银行卡":       func(_ string) interface{} { return chinaid.BankNo() },
+	"汉字":           func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
+	"姓名":           func(_ string) interface{} { return chinaid.Name() },
+	"性别":           func(_ string) interface{} { return chinaid.Sex() },
+	"地址":           func(_ string) interface{} { return chinaid.Address() },
+	"手机":           func(_ string) interface{} { return chinaid.Mobile() },
+	"身份证":          func(_ string) interface{} { return chinaid.ChinaID() },
+	"发证机关":         func(_ string) interface{} { return chinaid.IssueOrg() },
+	"邮箱":           func(_ string) interface{} { return chinaid.Email() },
+	"银行卡":          func(_ string) interface{} { return chinaid.BankNo() },
 	"seq":          SubstitutionFnGen(SeqGenerator),
 })
 
@@ -467,7 +467,7 @@ func SeqGenerator(args string) func(args string) interface{} {
 
 	if i, err := strconv.ParseUint(args, 10, 64); err == nil {
 		return func(args string) interface{} {
-			return atomic.AddUint64(&i, 1)
+			return atomic.AddUint64(&i, 1) - 1
 		}
 	}
 
