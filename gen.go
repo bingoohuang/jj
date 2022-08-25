@@ -270,10 +270,12 @@ func (r *GenRun) repeatStr(element string) {
 
 func (r *Substituter) Value(name, params, expr string) interface{} {
 	r.genLock.RLock()
-	if f, ok := r.gen[name]; ok {
+	f, ok := r.gen[name]
+	r.genLock.RUnlock()
+
+	if ok {
 		return f(params)
 	}
-	r.genLock.RUnlock()
 
 	r.genLock.Lock()
 	defer r.genLock.Unlock()
@@ -303,10 +305,10 @@ func (r *Substituter) Value(name, params, expr string) interface{} {
 		}
 	}
 
-	f := func(args string) interface{} {
+	f1 := func(args string) interface{} {
 		return expr
 	}
-	r.gen[name] = f
+	r.gen[name] = f1
 	return f(params)
 }
 
