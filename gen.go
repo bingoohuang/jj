@@ -268,7 +268,7 @@ func (r *GenRun) repeatStr(element string) {
 	r.repeater = nil
 }
 
-func (r *Substituter) Value(name, params string) interface{} {
+func (r *Substituter) Value(name, params, expr string) interface{} {
 	r.genLock.RLock()
 	if f, ok := r.gen[name]; ok {
 		return f(params)
@@ -303,7 +303,11 @@ func (r *Substituter) Value(name, params string) interface{} {
 		}
 	}
 
-	return ""
+	f := func(args string) interface{} {
+		return expr
+	}
+	r.gen[name] = f
+	return f(params)
 }
 
 type Repeater struct {
@@ -355,8 +359,10 @@ func parseRandSize(s string) (from, to, time int64, err error) {
 	return from, to, times, nil
 }
 
-type SubstitutionFn func(args string) interface{}
-type SubstitutionFnGen func(args string) func(args string) interface{}
+type (
+	SubstitutionFn    func(args string) interface{}
+	SubstitutionFnGen func(args string) func(args string) interface{}
+)
 
 func (r *GenContext) RegisterFn(fn string, f interface{}) { r.Substitute.Register(fn, f) }
 

@@ -44,11 +44,13 @@ const (
 // This operation returns zero or a negative value if an error occurred. This
 // value represents the position that the parser was at when it discovered the
 // error. To get the true offset multiple this value by -1.
-//   e := StreamParse(json, iter)
-//   if e < 0 {
-//       pos := e * -1
-//       return fmt.Errorf("parsing error at position %d", pos)
-//   }
+//
+//	e := StreamParse(json, iter)
+//	if e < 0 {
+//	    pos := e * -1
+//	    return fmt.Errorf("parsing error at position %d", pos)
+//	}
+//
 // This operation returns a positive value when successful. If the 'iter'
 // stopped early then this value will be the position the parser was at when it
 // stopped, otherwise the value will be equal the length of the original json

@@ -30,15 +30,15 @@ type Verifier interface {
 // Verify Configuration Parameters.
 // Verify must be created with NewJtp function.
 //
-//  // with some options
-// 	_ = NewJtp(
-// 			 WithMaxArrayLen(6),
-// 			 WithMaxDepth(7),
-// 			 WithMaxKeyLen(20), WithMaxStringLen(50),
-// 			 )
+//	 // with some options
+//		_ = NewJtp(
+//				 WithMaxArrayLen(6),
+//				 WithMaxDepth(7),
+//				 WithMaxKeyLen(20), WithMaxStringLen(50),
+//				 )
 //
-//  // with single option
-// 	_ = NewJtp(WithMaxStringLen(25))
+//	 // with single option
+//		_ = NewJtp(WithMaxStringLen(25))
 //
 // Exported variable are for logging and reference.
 type Verify struct {
