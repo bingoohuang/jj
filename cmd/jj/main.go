@@ -14,9 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bingoohuang/gg/pkg/ss"
-
 	"github.com/antonmedv/expr"
+	"github.com/bingoohuang/gg/pkg/ss"
 	"github.com/bingoohuang/jj"
 	"github.com/mattn/go-isatty"
 )

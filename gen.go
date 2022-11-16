@@ -17,11 +17,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/bingoohuang/gg/pkg/osx"
-	"github.com/dustin/go-humanize"
-
 	"github.com/Pallinder/go-randomdata"
 	"github.com/bingoohuang/gg/pkg/chinaid"
+	"github.com/bingoohuang/gg/pkg/osx"
 	"github.com/bingoohuang/gg/pkg/osx/env"
 	"github.com/bingoohuang/gg/pkg/randx"
 	"github.com/bingoohuang/gg/pkg/ss"
@@ -29,6 +27,7 @@ import (
 	"github.com/bingoohuang/gg/pkg/uid"
 	"github.com/bingoohuang/gg/pkg/vars"
 	"github.com/bingoohuang/jj/reggen"
+	"github.com/dustin/go-humanize"
 )
 
 var DefaultSubstituteFns = NewSubstituter(map[string]interface{}{
