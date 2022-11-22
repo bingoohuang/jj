@@ -17,33 +17,43 @@ var (
 	encoderInitOnce sync.Once
 )
 
+func invokeJiami(result interface{}, wrapper string) interface{} {
+	if wrapper != "..jiami" {
+		return result
+	}
+
+	encoderInitOnce.Do(initJiami)
+
+	plain := &jiami.Plain{}
+	if str, ok := result.(string); ok {
+		plain.Data = []byte(str)
+	} else if bb, ok := result.([]byte); ok {
+		plain.Data = bb
+	} else {
+		plain.Data = []byte(fmt.Sprintf("%v", result))
+	}
+	encoded, err := encoder.Encrypt(aesKey, plain)
+	if err != nil {
+		log.Fatalf("encrypt failed: %v", err)
+	}
+
+	b, err := msgpack.Marshal(encoded)
+	if err != nil {
+		log.Fatalf("msgpack.Marshal failed: %v", err)
+	}
+	return base64.StdEncoding.EncodeToString(b)
+}
+
 func wrapJiami(f func(args string) interface{}, wrapper string) func(args string) interface{} {
 	if wrapper == "" {
 		return f
 	}
-	if wrapper == "jiami" {
+	if wrapper == "..jiami" {
 		encoderInitOnce.Do(initJiami)
 
 		return func(args string) interface{} {
 			result := f(args)
-			plain := &jiami.Plain{}
-			if str, ok := result.(string); ok {
-				plain.Data = []byte(str)
-			} else if bb, ok := result.([]byte); ok {
-				plain.Data = bb
-			} else {
-				plain.Data = []byte(fmt.Sprintf("%v", result))
-			}
-			encoded, err := encoder.Encrypt(aesKey, plain)
-			if err != nil {
-				log.Fatalf("encrypt failed: %v", err)
-			}
-
-			b, err := msgpack.Marshal(encoded)
-			if err != nil {
-				log.Fatalf("msgpack.Marshal failed: %v", err)
-			}
-			return base64.StdEncoding.EncodeToString(b)
+			return invokeJiami(result, wrapper)
 		}
 
 	}

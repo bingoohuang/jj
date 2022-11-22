@@ -279,10 +279,11 @@ func (r *Substituter) Value(name, params, expr string) interface{} {
 	r.genLock.Lock()
 	defer r.genLock.Unlock()
 
+	// 处理 ..jiami 加密封装提示
 	wrapper := ""
 	fullname := name
 	if p := strings.LastIndex(name, ".."); p > 0 {
-		wrapper = name[p+2:]
+		wrapper = name[p:]
 		name = name[:p]
 	}
 

@@ -64,7 +64,7 @@ type WalOptions struct {
 	// LogFormat is the format of the log files. Default is BinaryFormat.
 	LogFormat
 	// SegmentCacheSize is the maximum number of segments that will be held in
-	// memory for caching. Increasing this value may enhance performance for
+	// memory for CachingSubstituter. Increasing this value may enhance performance for
 	// concurrent read operations. Default is 2
 	SegmentCacheSize int
 	// NoCopy allows for the Read() operation to return the raw underlying data
