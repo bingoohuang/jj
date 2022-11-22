@@ -279,35 +279,40 @@ func (r *Substituter) Value(name, params, expr string) interface{} {
 	r.genLock.Lock()
 	defer r.genLock.Unlock()
 
-	if f, ok := r.gen[name]; ok {
-		return f(params)
+	wrapper := ""
+	fullname := name
+	if p := strings.LastIndex(name, ".."); p > 0 {
+		wrapper = name[p+2:]
+		name = name[:p]
 	}
 
 	if g, ok := r.raw[name]; ok {
 		if gt, ok := g.(SubstitutionFnGen); ok {
-			f := gt(params)
-			r.gen[name] = f
+			f := wrapJiami(gt(params), wrapper)
+			r.gen[fullname] = f
 			return f(params)
 		}
 		if gt, ok := g.(func(args string) func(args string) interface{}); ok {
-			f := gt(params)
-			r.gen[name] = f
+			f := wrapJiami(gt(params), wrapper)
+			r.gen[fullname] = f
 			return f(params)
 		}
 		if gt, ok := g.(SubstitutionFn); ok {
-			r.gen[name] = gt
-			return gt(params)
+			f := wrapJiami(gt, wrapper)
+			r.gen[fullname] = f
+			return f(params)
 		}
 		if gt, ok := g.(func(args string) interface{}); ok {
-			r.gen[name] = gt
-			return gt(params)
+			f := wrapJiami(gt, wrapper)
+			r.gen[fullname] = f
+			return f(params)
 		}
 	}
 
-	f1 := func(args string) interface{} {
+	f = wrapJiami(func(args string) interface{} {
 		return expr
-	}
-	r.gen[name] = f1
+	}, wrapper)
+	r.gen[fullname] = f
 	return f(params)
 }
 

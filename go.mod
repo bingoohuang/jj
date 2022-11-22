@@ -7,21 +7,25 @@ require (
 	github.com/antonmedv/expr v1.9.0
 	github.com/bingoohuang/easyjson v0.0.0-20211118132814-5606aa48c508
 	github.com/bingoohuang/gg v0.0.0-20220825014456-513d8c7ea917
+	github.com/bingoohuang/jiami v0.0.0-20221122064658-cdd6a948124e
 	github.com/buger/jsonparser v1.1.1
+	github.com/cristalhq/base64 v0.1.2
 	github.com/dustin/go-humanize v1.0.0
 	github.com/mattn/go-isatty v0.0.15-0.20210929170527-d423e9c6c3bf
 	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
+	github.com/vmihailenco/msgpack/v5 v5.3.5
 )
 
 require (
-	github.com/cristalhq/base64 v0.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pbnjay/pixfont v0.0.0-20200714042608-33b744692567 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+	golang.org/x/crypto v0.3.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
