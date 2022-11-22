@@ -3,20 +3,20 @@ package jj
 import (
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/bingoohuang/gg/pkg/vars"
 )
 
 func GenWithCache(s string) string {
-	return vars.ToString(vars.ParseExpr(s).Eval(CachingSubstituter))
+	return vars.ToString(vars.ParseExpr(s).Eval(NewCachingSubstituter()))
 }
 
-var CachingSubstituter Substitute = &cacheValuer{Map: make(map[string]interface{})}
+func NewCachingSubstituter() Substitute {
+	return &cacheValuer{Map: make(map[string]interface{})}
+}
 
 type cacheValuer struct {
 	Map map[string]interface{}
-	sync.RWMutex
 }
 
 func (v *cacheValuer) Register(fn string, f interface{}) {
@@ -37,9 +37,7 @@ func (v *cacheValuer) Value(name, params, expr string) interface{} {
 	hasCachingResultTip := len(subs) > 0
 	if hasCachingResultTip { // CachingSubstituter tips found
 		pureName = subs[1]
-		v.RLock()
 		x, ok := v.Map[name]
-		v.RUnlock()
 		if ok {
 			return invokeJiami(x, wrapper)
 		}
@@ -48,9 +46,7 @@ func (v *cacheValuer) Value(name, params, expr string) interface{} {
 	x := DefaultGen.Value(pureName+wrapper, params, expr)
 
 	if hasCachingResultTip {
-		v.Lock()
 		v.Map[name] = x
-		v.Unlock()
 	}
 	return x
 }
