@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -51,6 +52,7 @@ var DefaultSubstituteFns = NewSubstituter(map[string]interface{}{
 	"发证机关":         func(_ string) interface{} { return chinaid.IssueOrg() },
 	"邮箱":           func(_ string) interface{} { return chinaid.Email() },
 	"银行卡":          func(_ string) interface{} { return chinaid.BankNo() },
+	"env":          func(name string) interface{} { return os.Getenv(name) },
 	"seq":          SubstitutionFnGen(SeqGenerator),
 })
 
