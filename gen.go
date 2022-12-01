@@ -31,7 +31,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-var DefaultSubstituteFns = NewSubstituter(map[string]interface{}{
+var DefaultSubstituteFns = map[string]interface{}{
 	"random":       Random,
 	"random_int":   RandomInt,
 	"random_bool":  func(_ string) interface{} { return randx.Bool() },
@@ -54,7 +54,7 @@ var DefaultSubstituteFns = NewSubstituter(map[string]interface{}{
 	"银行卡":          func(_ string) interface{} { return chinaid.BankNo() },
 	"env":          func(name string) interface{} { return os.Getenv(name) },
 	"seq":          SubstitutionFnGen(SeqGenerator),
-})
+}
 
 // RandomImage creates a random image.
 // checked on https://codebeautify.org/base64-to-image-converter
@@ -125,6 +125,7 @@ func NewSubstituter(m map[string]interface{}) *Substituter {
 		gen: map[string]SubstitutionFn{},
 	}
 }
+
 func (r *Substituter) Register(fn string, f interface{}) { r.raw[fn] = f }
 
 type Substitute interface {
@@ -148,10 +149,8 @@ type GenContext struct {
 	Substitute
 }
 
-var DefaultGen = NewGen()
-
 func NewGenContext(s Substitute) *GenContext { return &GenContext{Substitute: s} }
-func NewGen() *GenContext                    { return NewGenContext(DefaultSubstituteFns) }
+func NewGen() *GenContext                    { return NewGenContext(NewSubstituter(DefaultSubstituteFns)) }
 
 func (r *GenRun) walk(start, end, info int) int {
 	element := r.Src[start:end]
@@ -375,6 +374,8 @@ type (
 
 func (r *GenContext) RegisterFn(fn string, f interface{}) { r.Substitute.Register(fn, f) }
 
+var DefaultGen = NewGen()
+
 func Gen(src string) string { return DefaultGen.Gen(src) }
 
 func (r *GenContext) Gen(src string) string {
@@ -535,17 +536,18 @@ func ParseConf(args string, v interface{}) {
 	MapToConf(ParseArguments(args), v)
 }
 
-func ParseArguments(args string) map[string]string {
-	result := make(map[string]string)
+func ParseArguments(args string) map[string][]string {
+	result := make(map[string][]string)
 	subs := argRegexp.FindAllStringSubmatch(args, -1)
 	for _, sub := range subs {
-		result[sub[1]] = sub[2]
+		k, v := sub[1], sub[2]
+		result[k] = append(result[k], v)
 	}
 
 	return result
 }
 
-func MapToConf(m map[string]string, v interface{}) {
+func MapToConf(source map[string][]string, v interface{}) {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
 		panic("v should be pointer to struct ")
@@ -554,24 +556,53 @@ func MapToConf(m map[string]string, v interface{}) {
 	if elem.Kind() != reflect.Struct {
 		panic("v should be pointer to struct ")
 	}
-	mm := make(map[string]string)
-	for k, v := range m {
-		mm[strings.ToLower(k)] = v
+	mm := make(map[string][]string)
+	for k, vv := range source {
+		kk := strings.ToLower(k)
+		for _, v := range vv {
+			mm[kk] = append(mm[kk], v)
+		}
 	}
 
 	t := elem.Type()
 	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		if mv, ok := mm[strings.ToLower(f.Name)]; ok {
-			switch f.Type.Kind() {
+		ti := t.Field(i)
+		fi := elem.Field(i)
+
+		switch ti.Type.Kind() {
+		case reflect.Map:
+			if prefix := ti.Tag.Get("prefix"); prefix != "" {
+				m := make(map[string]string)
+				for mk, mv := range source {
+					if strings.HasPrefix(mk, prefix) {
+						delete(m, mk)
+						m[strings.TrimPrefix(mk, prefix)] = mv[0]
+					}
+				}
+				fi.Set(reflect.ValueOf(m))
+				continue
+			}
+		}
+
+		name := strings.ToLower(ti.Name)
+		if mv, ok := mm[name]; ok {
+			delete(mm, name)
+			bv := mv[0]
+
+			switch ti.Type.Kind() {
+			case reflect.Slice:
+				switch ti.Type.Elem().Kind() {
+				case reflect.String:
+					fi.Set(reflect.ValueOf(mv))
+				}
 			case reflect.String:
-				elem.Field(i).Set(reflect.ValueOf(mv))
+				fi.Set(reflect.ValueOf(bv))
 			case reflect.Bool:
-				b := mv == "" || mv == "true" || mv == "yes" || mv == "1"
-				elem.Field(i).Set(reflect.ValueOf(b))
+				b := bv == "" || bv == "true" || bv == "yes" || bv == "1"
+				fi.Set(reflect.ValueOf(b))
 			case reflect.Int:
-				b, _ := strconv.Atoi(mv)
-				elem.Field(i).Set(reflect.ValueOf(b))
+				b, _ := strconv.Atoi(bv)
+				fi.Set(reflect.ValueOf(b))
 			}
 		}
 	}

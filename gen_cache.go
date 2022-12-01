@@ -12,15 +12,17 @@ func GenWithCache(s string) string {
 }
 
 func NewCachingSubstituter() Substitute {
-	return &cacheValuer{Map: make(map[string]interface{})}
+	internal := NewSubstituter(DefaultSubstituteFns)
+	return &cacheValuer{Map: make(map[string]interface{}), internal: internal}
 }
 
 type cacheValuer struct {
-	Map map[string]interface{}
+	Map      map[string]interface{}
+	internal *Substituter
 }
 
 func (v *cacheValuer) Register(fn string, f interface{}) {
-	DefaultSubstituteFns.Register(fn, f)
+	v.internal.Register(fn, f)
 }
 
 var cacheSuffix = regexp.MustCompile(`^(.+)_\d+`)
@@ -43,7 +45,7 @@ func (v *cacheValuer) Value(name, params, expr string) interface{} {
 		}
 	}
 
-	x := DefaultGen.Value(pureName+wrapper, params, expr)
+	x := v.internal.Value(pureName+wrapper, params, expr)
 
 	if hasCachingResultTip {
 		v.Map[name] = x

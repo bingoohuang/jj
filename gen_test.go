@@ -79,11 +79,11 @@ func TestGenExample(t *testing.T) {
 }
 
 func TestParseArguments(t *testing.T) {
-	assert.Equal(t, map[string]string{
-		"size": "10",
-		"std":  "",
-		"url":  "",
-		"raw":  "",
+	assert.Equal(t, map[string][]string{
+		"size": {"10"},
+		"std":  {""},
+		"url":  {""},
+		"raw":  {""},
 	}, jj.ParseArguments("size=10 std url raw"))
 
 	arg := struct {
@@ -104,4 +104,15 @@ func TestParseArguments(t *testing.T) {
 		Url:  true,
 		Raw:  false,
 	}, arg)
+
+	type mArg struct {
+		Map map[string]string `prefix:"result."`
+	}
+
+	var m mArg
+
+	jj.ParseConf("result.AccessToken=a.b.c", &m)
+	assert.Equal(t, mArg{
+		Map: map[string]string{"AccessToken": "a.b.c"},
+	}, m)
 }
