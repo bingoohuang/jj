@@ -53,7 +53,14 @@ var DefaultSubstituteFns = map[string]interface{}{
 	"邮箱":           func(_ string) interface{} { return chinaid.Email() },
 	"银行卡":          func(_ string) interface{} { return chinaid.BankNo() },
 	"env":          func(name string) interface{} { return os.Getenv(name) },
-	"seq":          SubstitutionFnGen(SeqGenerator),
+	"file": func(name string) interface{} {
+		d, err := os.ReadFile(name)
+		if err != nil {
+			log.Fatalf("F! read file %s failed: %v", name, err)
+		}
+		return string(d)
+	},
+	"seq": SubstitutionFnGen(SeqGenerator),
 }
 
 // RandomImage creates a random image.
