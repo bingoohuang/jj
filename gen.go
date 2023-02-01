@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"net"
 	"os"
 	"reflect"
 	"regexp"
@@ -32,6 +33,7 @@ import (
 )
 
 var DefaultSubstituteFns = map[string]interface{}{
+	"ip":           RandomIP,
 	"random":       Random,
 	"random_int":   RandomInt,
 	"random_bool":  func(_ string) interface{} { return randx.Bool() },
@@ -498,6 +500,42 @@ func SeqGenerator(args string) func(args string) interface{} {
 	return func(args string) interface{} {
 		return 0
 	}
+}
+
+func RandomIP(args string) interface{} {
+	if args == "" || args == "v4" {
+		buf := make([]byte, 4)
+		binary.LittleEndian.PutUint32(buf, rand.Uint32())
+		return net.IP(buf).String()
+	} else if args == "v6" {
+		buf := make([]byte, 16)
+		binary.LittleEndian.PutUint64(buf, rand.Uint64())
+		binary.LittleEndian.PutUint64(buf[8:], rand.Uint64())
+		return net.IP(buf).To16().String()
+	}
+
+	if _, ipNet, err := net.ParseCIDR(args); err == nil {
+		// The number of leading 1s in the mask
+		ones, _ := ipNet.Mask.Size()
+		quotient := ones / 8
+		remainder := ones % 8
+
+		// create random 4-byte byte slice
+		r := make([]byte, 4)
+		rand.Read(r)
+
+		for i := 0; i <= quotient; i++ {
+			if i < quotient {
+				r[i] = ipNet.IP[i]
+			} else {
+				shifted := r[i] >> remainder
+				r[i] = ^ipNet.IP[i] & shifted
+			}
+		}
+		return net.IPv4(r[0], r[1], r[2], r[3]).String()
+	}
+
+	return "127.0.0.1"
 }
 
 func RandomInt(args string) interface{} {
