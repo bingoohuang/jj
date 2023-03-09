@@ -249,9 +249,9 @@ func (r *GenRun) Eval(subs vars.Subs, quote bool) (s string) {
 	if v, ok := result.(string); ok {
 		if quote {
 			return strconv.Quote(v)
-		} else {
-			return v
 		}
+
+		return v
 	}
 
 	return vars.ToString(result)
