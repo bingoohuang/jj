@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -155,7 +154,7 @@ func (l *WalLog) pushCache(segIdx int) {
 
 // load all the segments. This operation also cleans up any START/END segments.
 func (l *WalLog) load() error {
-	fis, err := ioutil.ReadDir(l.path)
+	fis, err := os.ReadDir(l.path)
 	if err != nil {
 		return err
 	}
@@ -524,7 +523,7 @@ func (l *WalLog) findSegment(index uint64) int {
 }
 
 func (l *WalLog) loadSegmentEntries(s *segment) error {
-	data, err := ioutil.ReadFile(s.path)
+	data, err := os.ReadFile(s.path)
 	if err != nil {
 		return err
 	}

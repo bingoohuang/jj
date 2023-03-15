@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"regexp"
@@ -520,10 +520,10 @@ func (a args) generate(outChan chan Out, input []byte) {
 
 func createInput(a args) ([]byte, error) {
 	if a.infile != nil {
-		return ioutil.ReadFile(*a.infile)
+		return os.ReadFile(*a.infile)
 	}
 
-	return ioutil.ReadAll(os.Stdin)
+	return io.ReadAll(os.Stdin)
 }
 
 func (a args) createOutFile() *os.File {

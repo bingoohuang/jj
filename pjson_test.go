@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -495,7 +494,7 @@ func mustBeAGood(json []byte) {
 
 // testFile tests if a JSON file is good
 func testFile(path string) {
-	json, err := ioutil.ReadFile(path)
+	json, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
@@ -503,7 +502,7 @@ func testFile(path string) {
 }
 
 func TestFiles(t *testing.T) {
-	fis, err := ioutil.ReadDir("testdata/pjson")
+	fis, err := os.ReadDir("testdata/pjson")
 	if err != nil {
 		panic(err)
 	}
@@ -535,7 +534,7 @@ func testSpeed(path string) {
 		jdata = makeRandomNumbersJSON()
 	} else {
 		var err error
-		jdata, err = ioutil.ReadFile(path)
+		jdata, err = os.ReadFile(path)
 		if err != nil {
 			panic(err)
 		}
@@ -570,7 +569,7 @@ func TestSpeed(t *testing.T) {
 		return
 	}
 	fmt.Printf("%s %s/%s\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
-	fis, err := ioutil.ReadDir("testfiles")
+	fis, err := os.ReadDir("testfiles")
 	if err != nil {
 		panic(err)
 	}
