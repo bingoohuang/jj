@@ -623,7 +623,7 @@ Benchmarks of jj with
 - [encoding/json](https://golang.org/pkg/encoding/json/),
 - [ffjson](https://github.com/pquerna/ffjson),
 - [EasyJSON](https://github.com/mailru/easyjson),
-- [jsonparser](https://github.com/buger/jsonparser),
+- [jsonparser](https://github.com/buger/jsonparser) Alternative JSON parser for Go (10x times faster standard library)
 - [json-iterator](https://github.com/json-iterator/go)
 
 ```
