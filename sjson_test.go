@@ -111,10 +111,16 @@ func TestSjsonBasic(t *testing.T) {
 		`{"app.token":"cde"}`,
 		`{"app.token":"abc"}`,
 		"app\\.token", `"cde"`)
-	testRaw(t, setRaw, `{"b":{"this":{"😇":""}}}`, ``, "b.this.😇", `""`)
-	testRaw(t, setRaw, `[ 1,2  ,3]`, `  [ 1,2  ] `, "-1", `3`)
+	testRaw(t, setRaw,
+		`{"b":{"this":{"😇":""}}}`,
+		``,
+		"b.this.😇", `""`)
+	testRaw(t, setRaw,
+		`[ 1,2  ,3]`,
+		`  [ 1,2  ] `,
+		"-1", `3`)
 	testRaw(t, setInt, `[1234]`, ``, `0`, int64(1234))
-	testRaw(t, setFloat, `[1234.5]`, ``, `0`, 1234.5)
+	testRaw(t, setFloat, `[1234.5]`, ``, `0`, float64(1234.5))
 	testRaw(t, setString, `["1234.5"]`, ``, `0`, "1234.5")
 	testRaw(t, setBool, `[true]`, ``, `0`, true)
 	testRaw(t, setBool, `[null]`, ``, `0`, nil)
@@ -336,5 +342,19 @@ func TestIndexes2(t *testing.T) {
 	}
 	if Get(json, "friends.#.last").String() != `["Johnson","Craig","Johnson"]` {
 		t.Fatal("mismatch")
+	}
+}
+
+func TestIssue61(t *testing.T) {
+	json := `{
+		"@context": {
+		  "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+		  "@vocab": "http://schema.org/",
+		  "sh": "http://www.w3.org/ns/shacl#"
+		}
+	}`
+	json1, _ := Set(json, "@context.@vocab", "newval")
+	if Get(json1, "@context.@vocab").String() != "newval" {
+		t.Fail()
 	}
 }

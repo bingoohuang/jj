@@ -138,7 +138,9 @@ func appendStringify(buf []byte, s string) []byte {
 }
 
 // appendBuild builds a json block from a json path.
-func appendBuild(buf []byte, array bool, paths []pathResult, raw string, stringify bool) []byte {
+func appendBuild(buf []byte, array bool, paths []pathResult, raw string,
+	stringify bool,
+) []byte {
 	if !array {
 		buf = appendStringify(buf, paths[0].part)
 		buf = append(buf, ':')
@@ -240,9 +242,12 @@ func appendRawPaths(buf []byte, jstr string, paths []pathResult, raw string, sc 
 		if sc.RawPath {
 			res = Get(jstr, paths[0].gpart, ApplyGetOption(sc.PathOption))
 		} else if paths[0].part == "-1" && !paths[0].force {
-			res = Get(jstr, "-1")
+			res = Get(jstr, "#")
+			if res.Int() > 0 {
+				res = Get(jstr, strconv.FormatInt(res.Int()-1, 10))
+				found = true
+			}
 		}
-		found = res.Exists()
 	}
 	if !found {
 		res = Get(jstr, paths[0].gpart, ApplyGetOption(sc.PathOption), DisableNegativeIndex(true))

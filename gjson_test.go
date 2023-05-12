@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -105,7 +106,7 @@ func TestEscapePath(t *testing.T) {
 }
 
 // this json block is poorly formed on purpose.
-var basicJSON = `{"age":100, "name":{"here":"B\\\"R"},
+var basicJSON = `  {"age":100, "name":{"here":"B\\\"R"},
 	"noop":{"what is a wren?":"a bird"},
 	"happy":true,"immortal":false,
 	"items":[1,2,3,{"tags":[1,2,3],"points":[[1,2],[3,4]]},4,5,6,7],
@@ -138,13 +139,64 @@ var basicJSON = `{"age":100, "name":{"here":"B\\\"R"},
 			}
     	]
 	},
-	"lastly":{"yay":"final"}
+	"lastly":{"end...ing":"soon","yay":"final"}
 }`
 
-func assert(t testing.TB, cond bool) {
-	if !cond {
-		panic("assert failed")
+func TestPath(t *testing.T) {
+	json := basicJSON
+	r := Get(json, "@this")
+	path := r.Path(json)
+	if path != "@this" {
+		t.FailNow()
 	}
+
+	r = Parse(json)
+	path = r.Path(json)
+	if path != "@this" {
+		t.FailNow()
+	}
+
+	obj := Parse(json)
+	obj.ForEach(func(key, val Result) bool {
+		kp := key.Path(json)
+		assert(t, kp == "")
+		vp := val.Path(json)
+		if vp == "name" {
+			// there are two "name" keys
+			return true
+		}
+		val2 := obj.Get(vp)
+		assert(t, val2.Raw == val.Raw)
+		return true
+	})
+	arr := obj.Get("loggy.programmers")
+	arr.ForEach(func(_, val Result) bool {
+		vp := val.Path(json)
+		val2 := Get(json, vp)
+		assert(t, val2.Raw == val.Raw)
+		return true
+	})
+	get := func(path string) {
+		r1 := Get(json, path)
+		path2 := r1.Path(json)
+		r2 := Get(json, path2)
+		assert(t, r1.Raw == r2.Raw)
+	}
+	get("age")
+	get("name")
+	get("name.here")
+	get("noop")
+	get("noop.what is a wren?")
+	get("arr.0")
+	get("arr.1")
+	get("arr.2")
+	get("arr.3")
+	get("arr.3.hello")
+	get("arr.4")
+	get("arr.5")
+	get("loggy.programmers.2.email")
+	get("lastly.end\\.\\.\\.ing")
+	get("lastly.yay")
 }
 
 func TestTimeResult(t *testing.T) {
@@ -389,9 +441,9 @@ func TestBasic1(t *testing.T) {
 	mtok := get(basicJSON, `loggy.programmers`)
 	var count int
 	mtok.ForEach(func(key, value Result) bool {
-		if key.Exists() {
-			t.Fatalf("expected %v, got %v", false, key.Exists())
-		}
+		assert(t, key.Exists())
+		assert(t, key.String() == fmt.Sprint(count))
+		assert(t, key.Int() == int64(count))
 		count++
 		if count == 3 {
 			return false
@@ -619,6 +671,12 @@ func TestUnescape(t *testing.T) {
 	unescape(string([]byte{'\\', '/', '\\', 'b', '\\', 'f'}))
 }
 
+func assert(t testing.TB, cond bool) {
+	if !cond {
+		panic("assert failed")
+	}
+}
+
 func TestLess(t *testing.T) {
 	assert(t, !Result{Type: Null}.Less(Result{Type: Null}, true))
 	assert(t, Result{Type: Null}.Less(Result{Type: False}, true))
@@ -742,13 +800,8 @@ var exampleJSON = `{
 	}
 }`
 
-func TestNewParse(t *testing.T) {
-	// fmt.Printf("%v\n", parse2(exampleJSON, "widget").String())
-}
-
 func TestUnmarshalMap(t *testing.T) {
-	parse := Parse(exampleJSON)
-	m1 := parse.Value().(map[string]interface{})
+	m1 := Parse(exampleJSON).Value().(map[string]interface{})
 	var m2 map[string]interface{}
 	if err := json.Unmarshal([]byte(exampleJSON), &m2); err != nil {
 		t.Fatal(err)
@@ -1301,7 +1354,7 @@ func TestNumFloatString(t *testing.T) {
 }
 
 func TestDuplicateKeys(t *testing.T) {
-	// this is vaild json according to the JSON spec
+	// this is valid json according to the JSON spec
 	json := `{"name": "Alex","name": "Peter"}`
 	if Parse(json).Get("name").String() !=
 		Parse(json).Map()["name"].String() {
@@ -1333,10 +1386,10 @@ func TestArrayValues(t *testing.T) {
 	}
 	expect := strings.Join([]string{
 		`jj.Result{Type:3, Raw:"\"PERSON1\"", Str:"PERSON1", Num:0, ` +
-			`Index:0, Indexes:[]int(nil)}`,
+			`Index:11, Indexes:[]int(nil)}`,
 		`jj.Result{Type:3, Raw:"\"PERSON2\"", Str:"PERSON2", Num:0, ` +
-			`Index:0, Indexes:[]int(nil)}`,
-		`jj.Result{Type:2, Raw:"0", Str:"", Num:0, Index:0, Indexes:[]int(nil)}`,
+			`Index:21, Indexes:[]int(nil)}`,
+		`jj.Result{Type:2, Raw:"0", Str:"", Num:0, Index:31, Indexes:[]int(nil)}`,
 	}, "\n")
 	if output != expect {
 		t.Fatalf("expected '%v', got '%v'", expect, output)
@@ -1873,6 +1926,10 @@ func TestModifiersInMultipaths(t *testing.T) {
 	res = Get(json, `{friends.#.{age,first:first|@case:upper}|0.first}`)
 	exp = `{"first":"DALE"}`
 	assert(t, res.Raw == exp)
+
+	res = Get(readmeJSON, `{"children":children|@case:upper,"name":name.first,"age":age}`)
+	exp = `{"children":["SARA","ALEX","JACK"],"name":"Tom","age":37}`
+	assert(t, res.Raw == exp)
 }
 
 func TestIssue141(t *testing.T) {
@@ -2059,6 +2116,11 @@ func TestVariousFuzz(t *testing.T) {
 	// Issue #196
 	testJSON = `[#.@pretty.@join:{""[]""preserve"3,"][{]]]`
 	Get(testJSON, testJSON)
+
+	// Issue #237
+	testJSON1 := `["*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,,,,,,"]`
+	testJSON2 := `#[%"*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,,,,,,""*,*"]`
+	Get(testJSON1, testJSON2)
 }
 
 func TestSubpathsWithMultipaths(t *testing.T) {
@@ -2163,7 +2225,7 @@ func TestIndexes(t *testing.T) {
 			[4,5,[6]]
 		],
 		"objectArray":[
-			{"first": "Dale", "age": 44},TestIndexesMatchesRaw
+			{"first": "Dale", "age": 44},
 			{"first": "Roger", "age": 68},
 		]
 	}`
@@ -2217,4 +2279,351 @@ func TestIndexesMatchesRaw(t *testing.T) {
 	r = Get(exampleJSON, `objectArray.#(age>43)#`)
 	assert(t, Parse(exampleJSON[r.Indexes[0]:]).Get("first").String() == "Dale")
 	assert(t, Parse(exampleJSON[r.Indexes[1]:]).Get("first").String() == "Roger")
+}
+
+func TestIssue240(t *testing.T) {
+	nonArrayData := `{"jsonrpc":"2.0","method":"subscription","params":
+		{"channel":"funny_channel","data":
+			{"name":"Jason","company":"good_company","number":12345}
+		}
+	}`
+	parsed := Parse(nonArrayData)
+	assert(t, len(parsed.Get("params.data").Array()) == 1)
+
+	arrayData := `{"jsonrpc":"2.0","method":"subscription","params":
+		{"channel":"funny_channel","data":[
+			{"name":"Jason","company":"good_company","number":12345}
+		]}
+	}`
+	parsed = Parse(arrayData)
+	assert(t, len(parsed.Get("params.data").Array()) == 1)
+}
+
+func TestKeysValuesModifier(t *testing.T) {
+	json := `{
+		"1300014": {
+		  "code": "1300014",
+		  "price": 59.18,
+		  "symbol": "300014",
+		  "update": "2020/04/15 15:59:54",
+		},
+		"1300015": {
+		  "code": "1300015",
+		  "price": 43.31,
+		  "symbol": "300015",
+		  "update": "2020/04/15 15:59:54",
+		}
+	  }`
+	assert(t, Get(json, `@keys`).String() == `["1300014","1300015"]`)
+	assert(t, Get(``, `@keys`).String() == `[]`)
+	assert(t, Get(`"hello"`, `@keys`).String() == `[null]`)
+	assert(t, Get(`[]`, `@keys`).String() == `[]`)
+	assert(t, Get(`[1,2,3]`, `@keys`).String() == `[null,null,null]`)
+
+	assert(t, Get(json, `@values.#.code`).String() == `["1300014","1300015"]`)
+	assert(t, Get(``, `@values`).String() == `[]`)
+	assert(t, Get(`"hello"`, `@values`).String() == `["hello"]`)
+	assert(t, Get(`[]`, `@values`).String() == `[]`)
+	assert(t, Get(`[1,2,3]`, `@values`).String() == `[1,2,3]`)
+}
+
+func TestNaNInf(t *testing.T) {
+	json := `[+Inf,-Inf,Inf,iNF,-iNF,+iNF,NaN,nan,nAn,-0,+0]`
+	raws := []string{
+		"+Inf", "-Inf", "Inf", "iNF", "-iNF", "+iNF", "NaN", "nan",
+		"nAn", "-0", "+0",
+	}
+	nums := []float64{
+		math.Inf(+1), math.Inf(-1), math.Inf(0), math.Inf(0),
+		math.Inf(-1), math.Inf(+1), math.NaN(), math.NaN(), math.NaN(),
+		math.Copysign(0, -1), 0,
+	}
+
+	assert(t, int(Get(json, `#`).Int()) == len(raws))
+	for i := 0; i < len(raws); i++ {
+		r := Get(json, fmt.Sprintf("%d", i))
+		assert(t, r.Raw == raws[i])
+		assert(t, r.Num == nums[i] || (math.IsNaN(r.Num) && math.IsNaN(nums[i])))
+		assert(t, r.Type == Number)
+	}
+
+	var i int
+	Parse(json).ForEach(func(_, r Result) bool {
+		assert(t, r.Raw == raws[i])
+		assert(t, r.Num == nums[i] || (math.IsNaN(r.Num) && math.IsNaN(nums[i])))
+		assert(t, r.Type == Number)
+		i++
+		return true
+	})
+
+	// Parse should also return valid numbers
+	assert(t, math.IsNaN(Parse("nan").Float()))
+	assert(t, math.IsNaN(Parse("NaN").Float()))
+	assert(t, math.IsNaN(Parse(" NaN").Float()))
+	assert(t, math.IsInf(Parse("+inf").Float(), +1))
+	assert(t, math.IsInf(Parse("-inf").Float(), -1))
+	assert(t, math.IsInf(Parse("+INF").Float(), +1))
+	assert(t, math.IsInf(Parse("-INF").Float(), -1))
+	assert(t, math.IsInf(Parse(" +INF").Float(), +1))
+	assert(t, math.IsInf(Parse(" -INF").Float(), -1))
+}
+
+func TestEmptyValueQuery(t *testing.T) {
+	// issue: https://github.com/tidwall/gjson/issues/246
+	assert(t, Get(
+		`["ig","","tw","fb","tw","ig","tw"]`,
+		`#(!="")#`).Raw ==
+		`["ig","tw","fb","tw","ig","tw"]`)
+	assert(t, Get(
+		`["ig","","tw","fb","tw","ig","tw"]`,
+		`#(!=)#`).Raw ==
+		`["ig","tw","fb","tw","ig","tw"]`)
+}
+
+func TestParseIndex(t *testing.T) {
+	assert(t, Parse(`{}`).Index == 0)
+	assert(t, Parse(` {}`).Index == 1)
+	assert(t, Parse(` []`).Index == 1)
+	assert(t, Parse(` true`).Index == 1)
+	assert(t, Parse(` false`).Index == 1)
+	assert(t, Parse(` null`).Index == 1)
+	assert(t, Parse(` +inf`).Index == 1)
+	assert(t, Parse(` -inf`).Index == 1)
+}
+
+func TestRevSquash(t *testing.T) {
+	assert(t, revSquash(` {}`) == `{}`)
+	assert(t, revSquash(` }`) == ` }`)
+	assert(t, revSquash(` [123]`) == `[123]`)
+	assert(t, revSquash(` ,123,123]`) == ` ,123,123]`)
+	assert(t, revSquash(` hello,[[true,false],[0,1,2,3,5],[123]]`) == `[[true,false],[0,1,2,3,5],[123]]`)
+	assert(t, revSquash(` "hello"`) == `"hello"`)
+	assert(t, revSquash(` "hel\\lo"`) == `"hel\\lo"`)
+	assert(t, revSquash(` "hel\\"lo"`) == `"lo"`)
+	assert(t, revSquash(` "hel\\\"lo"`) == `"hel\\\"lo"`)
+	assert(t, revSquash(`hel\\\"lo"`) == `hel\\\"lo"`)
+	assert(t, revSquash(`\"hel\\\"lo"`) == `\"hel\\\"lo"`)
+	assert(t, revSquash(`\\\"hel\\\"lo"`) == `\\\"hel\\\"lo"`)
+	assert(t, revSquash(`\\\\"hel\\\"lo"`) == `"hel\\\"lo"`)
+	assert(t, revSquash(`hello"`) == `hello"`)
+	json := `true,[0,1,"sadf\"asdf",{"hi":["hello","t\"\"u",{"a":"b"}]},9]`
+	assert(t, revSquash(json) == json[5:])
+	assert(t, revSquash(json[:len(json)-3]) == `{"hi":["hello","t\"\"u",{"a":"b"}]}`)
+	assert(t, revSquash(json[:len(json)-4]) == `["hello","t\"\"u",{"a":"b"}]`)
+	assert(t, revSquash(json[:len(json)-5]) == `{"a":"b"}`)
+	assert(t, revSquash(json[:len(json)-6]) == `"b"`)
+	assert(t, revSquash(json[:len(json)-10]) == `"a"`)
+	assert(t, revSquash(json[:len(json)-15]) == `"t\"\"u"`)
+	assert(t, revSquash(json[:len(json)-24]) == `"hello"`)
+	assert(t, revSquash(json[:len(json)-33]) == `"hi"`)
+	assert(t, revSquash(json[:len(json)-39]) == `"sadf\"asdf"`)
+}
+
+const readmeJSON = `
+{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}
+`
+
+func TestQueryGetPath(t *testing.T) {
+	assert(t, strings.Join(
+		Get(readmeJSON, "friends.#.first").Paths(readmeJSON), " ") ==
+		"friends.0.first friends.1.first friends.2.first")
+	assert(t, strings.Join(
+		Get(readmeJSON, "friends.#(last=Murphy)").Paths(readmeJSON), " ") ==
+		"")
+	assert(t, Get(readmeJSON, "friends.#(last=Murphy)").Path(readmeJSON) ==
+		"friends.0")
+	assert(t, strings.Join(
+		Get(readmeJSON, "friends.#(last=Murphy)#").Paths(readmeJSON), " ") ==
+		"friends.0 friends.2")
+	arr := Get(readmeJSON, "friends.#.first").Array()
+	for i := 0; i < len(arr); i++ {
+		assert(t, arr[i].Path(readmeJSON) == fmt.Sprintf("friends.%d.first", i))
+	}
+}
+
+func TestStaticJSON(t *testing.T) {
+	json := `{
+		"name": {"first": "Tom", "last": "Anderson"}
+	}`
+	assert(t, Get(json,
+		`"bar"`).Raw ==
+		``)
+	assert(t, Get(json,
+		`!"bar"`).Raw ==
+		`"bar"`)
+	assert(t, Get(json,
+		`!{"name":{"first":"Tom"}}.{name.first}.first`).Raw ==
+		`"Tom"`)
+	assert(t, Get(json,
+		`{name.last,"foo":!"bar"}`).Raw ==
+		`{"last":"Anderson","foo":"bar"}`)
+	assert(t, Get(json,
+		`{name.last,"foo":!{"a":"b"},"that"}`).Raw ==
+		`{"last":"Anderson","foo":{"a":"b"}}`)
+	assert(t, Get(json,
+		`{name.last,"foo":!{"c":"d"},!"that"}`).Raw ==
+		`{"last":"Anderson","foo":{"c":"d"},"_":"that"}`)
+	assert(t, Get(json,
+		`[!true,!false,!null,!inf,!nan,!hello,{"name":!"andy",name.last},+inf,!["any","thing"]]`).Raw ==
+		`[true,false,null,inf,nan,{"name":"andy","last":"Anderson"},["any","thing"]]`,
+	)
+}
+
+func TestArrayKeys(t *testing.T) {
+	N := 100
+	json := "["
+	for i := 0; i < N; i++ {
+		if i > 0 {
+			json += ","
+		}
+		json += fmt.Sprint(i)
+	}
+	json += "]"
+	var i int
+	Parse(json).ForEach(func(key, value Result) bool {
+		assert(t, key.String() == fmt.Sprint(i))
+		assert(t, key.Int() == int64(i))
+		i++
+		return true
+	})
+	assert(t, i == N)
+}
+
+func TestToFromStr(t *testing.T) {
+	json := `{"Message":"{\"Records\":[{\"eventVersion\":\"2.1\"}]"}`
+	res := Get(json, "Message.@fromstr.Records.#.eventVersion.@tostr").Raw
+	assert(t, res == `["\"2.1\""]`)
+}
+
+func TestGroup(t *testing.T) {
+	json := `{"id":["123","456","789"],"val":[2,1]}`
+	res := Get(json, "@group").Raw
+	assert(t, res == `[{"id":"123","val":2},{"id":"456","val":1},{"id":"789"}]`)
+
+	json = `
+{
+	"issues": [
+	  {
+		"fields": {
+		  "labels": [
+			"milestone_1",
+			"group:foo",
+			"plan:a",
+			"plan:b"
+		  ]
+		},
+		"id": "123"
+	  },{
+		"fields": {
+		  "labels": [
+			"milestone_1",
+			"group:foo",
+			"plan:a",
+			"plan"
+		  ]
+		},
+		"id": "456"
+	  }
+	]
+  }
+  `
+	res = Get(json, `{"id":issues.#.id,"plans":issues.#.fields.labels.#(%"plan:*")#|#.#}|@group|#(plans>=2)#.id`).Raw
+	assert(t, res == `["123"]`)
+}
+
+func testJSONString(t *testing.T, str string) {
+	gjsonString := string(AppendJSONString(nil, str))
+	data, err := json.Marshal(str)
+	if err != nil {
+		panic(123)
+	}
+	goString := string(data)
+	if gjsonString != goString {
+		t.Fatal(strconv.Quote(str) + "\n\t" +
+			gjsonString + "\n\t" +
+			goString + "\n\t<<< MISMATCH >>>")
+	}
+}
+
+func TestJSONString(t *testing.T) {
+	testJSONString(t, "hello")
+	testJSONString(t, "he\"llo")
+	testJSONString(t, "he\"l\\lo")
+	const input = `{"utf8":"Example emoji, KO: \ud83d\udd13, \ud83c\udfc3 ` +
+		`OK: \u2764\ufe0f "}`
+	value := Get(input, "utf8")
+	var s string
+	json.Unmarshal([]byte(value.Raw), &s)
+	if value.String() != s {
+		t.Fatalf("expected '%v', got '%v'", s, value.String())
+	}
+	testJSONString(t, s)
+	testJSONString(t, "R\xfd\xfc\a!\x82eO\x16?_\x0f\x9ab\x1dr")
+	testJSONString(t, "_\xb9\v\xad\xb3|X!\xb6\xd9U&\xa4\x1a\x95\x04")
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	start := time.Now()
+	var buf [16]byte
+	for time.Since(start) < time.Second*2 {
+		if _, err := rng.Read(buf[:]); err != nil {
+			t.Fatal(err)
+		}
+		testJSONString(t, string(buf[:]))
+	}
+}
+
+func TestIndexAtSymbol(t *testing.T) {
+	json := `{
+		"@context": {
+		  "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+		  "@vocab": "http://schema.org/",
+		  "sh": "http://www.w3.org/ns/shacl#"
+		}
+	}`
+	assert(t, Get(json, "@context.@vocab").Index == 85)
+}
+
+func TestDeepModifierWithOptions(t *testing.T) {
+	rawJson := `{"x":[{"y":[{"z":{"b":1, "c": 2, "a": 3}}]}]}`
+	jsonPathExpr := `x.#.y.#.z.@pretty:{"sortKeys":true}`
+	results := GetManyBytes([]byte(rawJson), jsonPathExpr)
+	assert(t, len(results) == 1)
+	actual := results[0].Raw
+	expected := `[[{
+  "a": 3,
+  "b": 1,
+  "c": 2
+}
+]]`
+	if expected != actual {
+		t.Fatal(strconv.Quote(rawJson) + "\n\t" +
+			expected + "\n\t" +
+			actual + "\n\t<<< MISMATCH >>>")
+	}
+}
+
+func TestIssue301(t *testing.T) {
+	json := `{
+		"children": ["Sara","Alex","Jack"],
+		"fav.movie": ["Deer Hunter"]
+	}`
+
+	assert(t, Get(json, `children.0`).String() == "Sara")
+	assert(t, Get(json, `children.[0]`).String() == `["Sara"]`)
+	assert(t, Get(json, `children.1`).String() == "Alex")
+	assert(t, Get(json, `children.[1]`).String() == `["Alex"]`)
+	assert(t, Get(json, `children.[10]`).String() == `[]`)
+	assert(t, Get(json, `fav\.movie.0`).String() == "Deer Hunter")
+	assert(t, Get(json, `fav\.movie.[0]`).String() == `["Deer Hunter"]`)
+	assert(t, Get(json, `fav\.movie.1`).String() == "")
+	assert(t, Get(json, `fav\.movie.[1]`).String() == "[]")
 }

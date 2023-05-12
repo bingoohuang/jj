@@ -12,7 +12,7 @@ $ echo '{"friends":["Tom","Jane","Carol"]}' | jj friends.-2  => Jane
 $ echo '[{"name":"bingoo"},2,3]' | jj 0.name                 => bingoo
 $ echo '[1,2,3]' | jj 0                                      => 1
 $ echo '[1,2,3]' | jj -1                                     => 3
-$ echo '[1,2,3]' | jj #                                      => 3
+$ echo '[1,2,3]' | jj \#                                     => 3
 6. Raw key(treat key as a single raw key without any other key path meaning)
 $ echo '{"friends.-1":["Andy","Carol"]}' | jj -K friends.-1  => ["Andy", "Carol"]
 7. JSON Lines lines.json file:

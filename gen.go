@@ -657,7 +657,7 @@ func RandomBase64(args string) interface{} {
 	arg := struct {
 		Size string
 		Std  bool
-		Url  bool
+		URL  bool
 		Raw  bool
 		File string
 	}{}
@@ -673,12 +673,11 @@ func RandomBase64(args string) interface{} {
 		}
 	} else if size, _ := humanize.ParseBytes(arg.Size); size > 0 {
 		token = make([]byte, size)
-		rand.Seed(time.Now().UnixNano())
-		_, _ = rand.Read(token)
+		rand.New(rand.NewSource(time.Now().UnixNano())).Read(token)
 	}
 
 	encoding := base64.StdEncoding
-	if arg.Url {
+	if arg.URL {
 		if arg.Raw {
 			encoding = base64.RawURLEncoding
 		} else {

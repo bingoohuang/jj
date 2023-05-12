@@ -63,14 +63,17 @@ type WalOptions struct {
 	// LogFormat is the format of the log files. Default is BinaryFormat.
 	LogFormat
 	// SegmentCacheSize is the maximum number of segments that will be held in
-	// memory for CachingSubstituter. Increasing this value may enhance performance for
-	// concurrent read operations. Default is 2
+	// memory for caching. Increasing this value may enhance performance for
+	// concurrent read operations. Default is 1
 	SegmentCacheSize int
 	// NoCopy allows for the Read() operation to return the raw underlying data
 	// slice. This is an optimization to help minimize allocations. When this
 	// option is set, do not modify the returned data because it may affect
 	// other Read calls. Default false
 	NoCopy bool
+	// Perms represents the datafiles modes and permission bits
+	DirPerms  os.FileMode
+	FilePerms os.FileMode
 }
 
 // DefaultWalOptions for WalOpen().
@@ -80,6 +83,8 @@ var DefaultWalOptions = &WalOptions{
 	LogFormat:        BinaryFormat, // BinaryFormat format is small and fast.
 	SegmentCacheSize: 2,            // Number of cached in-memory segments
 	NoCopy:           false,        // Make a new copy of data for every Read call.
+	DirPerms:         0o750,        // Permissions for the created directories
+	FilePerms:        0o640,        // Permissions for the created data files
 }
 
 // WalLog represents a write-ahead-log.
@@ -121,13 +126,20 @@ func WalOpen(path string, opts *WalOptions) (l *WalLog, err error) {
 	if opts.SegmentSize <= 0 {
 		opts.SegmentSize = DefaultWalOptions.SegmentSize
 	}
+	if opts.DirPerms == 0 {
+		opts.DirPerms = DefaultWalOptions.DirPerms
+	}
+	if opts.FilePerms == 0 {
+		opts.FilePerms = DefaultWalOptions.FilePerms
+	}
+
 	path, err = abs(path)
 	if err != nil {
 		return nil, err
 	}
 	l = &WalLog{path: path, opts: *opts}
 	l.scache.Resize(l.opts.SegmentCacheSize)
-	if err := os.MkdirAll(path, 0o777); err != nil {
+	if err := os.MkdirAll(path, l.opts.DirPerms); err != nil {
 		return nil, err
 	}
 	if err := l.load(); err != nil {
@@ -191,7 +203,7 @@ func (l *WalLog) load() error {
 		})
 		l.firstIndex = 1
 		l.lastIndex = 0
-		l.sfile, err = os.Create(l.segments[0].path)
+		l.sfile, err = os.OpenFile(l.segments[0].path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, l.opts.FilePerms)
 		return err
 	}
 	// WalOpen existing log. Clean up log if START of END segments exists.
@@ -243,7 +255,7 @@ func (l *WalLog) load() error {
 	l.firstIndex = l.segments[0].index
 	// WalOpen the last segment for appending
 	lseg := l.segments[len(l.segments)-1]
-	l.sfile, err = os.OpenFile(lseg.path, os.O_WRONLY, 0o666)
+	l.sfile, err = os.OpenFile(lseg.path, os.O_WRONLY, l.opts.FilePerms)
 	if err != nil {
 		return err
 	}
@@ -323,7 +335,7 @@ func (l *WalLog) cycle() error {
 		path:  filepath.Join(l.path, segmentName(l.lastIndex+1)),
 	}
 	var err error
-	l.sfile, err = os.Create(s.path)
+	l.sfile, err = os.OpenFile(s.path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, l.opts.FilePerms)
 	if err != nil {
 		return err
 	}
@@ -331,15 +343,17 @@ func (l *WalLog) cycle() error {
 	return nil
 }
 
-func appendJSONEntry(dst []byte, index uint64, data []byte) (out []byte, epos bpos) {
+func appendJSONEntry(dst []byte, index uint64, data []byte) (out []byte,
+	epos bpos,
+) {
 	// {"index":number,"data":string}
-	mark := len(dst)
+	pos := len(dst)
 	dst = append(dst, `{"index":"`...)
 	dst = strconv.AppendUint(dst, index, 10)
 	dst = append(dst, `","data":`...)
 	dst = appendJSONData(dst, data)
 	dst = append(dst, '}', '\n')
-	return dst, bpos{mark, len(dst)}
+	return dst, bpos{pos, len(dst)}
 }
 
 func appendJSONData(dst []byte, s []byte) []byte {
@@ -504,7 +518,9 @@ func (l *WalLog) LastIndex() (index uint64, err error) {
 	} else if l.closed {
 		return 0, ErrClosed
 	}
-
+	if l.lastIndex == 0 {
+		return 0, nil
+	}
 	return l.lastIndex, nil
 }
 
@@ -724,7 +740,7 @@ func (l *WalLog) truncateFront(index uint64) (err error) {
 	// Create a temp file contains the truncated segment.
 	tempName := filepath.Join(l.path, "TEMP")
 	err = func() error {
-		f, err := os.Create(tempName)
+		f, err := os.OpenFile(tempName, os.O_CREATE|os.O_RDWR|os.O_TRUNC, l.opts.FilePerms)
 		if err != nil {
 			return err
 		}
@@ -774,7 +790,7 @@ func (l *WalLog) truncateFront(index uint64) (err error) {
 	s.index = index
 	if segIdx == len(l.segments)-1 {
 		// Reopen the tail segment file
-		if l.sfile, err = os.OpenFile(newName, os.O_WRONLY, 0o666); err != nil {
+		if l.sfile, err = os.OpenFile(newName, os.O_WRONLY, l.opts.FilePerms); err != nil {
 			return err
 		}
 		var n int64
@@ -830,7 +846,7 @@ func (l *WalLog) truncateBack(index uint64) (err error) {
 	// Create a temp file contains the truncated segment.
 	tempName := filepath.Join(l.path, "TEMP")
 	err = func() error {
-		f, err := os.Create(tempName)
+		f, err := os.OpenFile(tempName, os.O_CREATE|os.O_RDWR|os.O_TRUNC, l.opts.FilePerms)
 		if err != nil {
 			return err
 		}
@@ -876,7 +892,7 @@ func (l *WalLog) truncateBack(index uint64) (err error) {
 		return err
 	}
 	// Reopen the tail segment file
-	if l.sfile, err = os.OpenFile(newName, os.O_WRONLY, 0o666); err != nil {
+	if l.sfile, err = os.OpenFile(newName, os.O_WRONLY, l.opts.FilePerms); err != nil {
 		return err
 	}
 	var n int64

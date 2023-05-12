@@ -519,11 +519,19 @@ func (a args) generate(outChan chan Out, input []byte) {
 }
 
 func createInput(a args) ([]byte, error) {
-	if a.infile != nil {
+	if a.infile == nil {
+		return io.ReadAll(os.Stdin)
+	}
+
+	if stat, err := os.Stat(*a.infile); err == nil && !stat.IsDir() {
 		return os.ReadFile(*a.infile)
 	}
 
-	return io.ReadAll(os.Stdin)
+	if strings.HasPrefix(*a.infile, "@") {
+		return os.ReadFile((*a.infile)[1:])
+	}
+
+	return []byte(*a.infile), nil
 }
 
 func (a args) createOutFile() *os.File {

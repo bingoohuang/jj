@@ -5,7 +5,7 @@
 package jj
 
 // Bit flags passed to the "info" parameter of the iter function which
-// provides additional information about the
+// provides additional information about the current JSON Element.
 const (
 	_          = 1 << iota
 	TokString  // the data is a JSON String
