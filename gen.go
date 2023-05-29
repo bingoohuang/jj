@@ -345,7 +345,7 @@ func (r *GenContext) parseRepeat(s string) *Repeater {
 	}
 
 	key, s := s[:p], s[p+1:]
-	_, _, times, err := parseRandSize(s)
+	_, _, _, _, times, err := parseRandSize(s)
 	if err != nil {
 		return nil
 	}
@@ -354,26 +354,38 @@ func (r *GenContext) parseRepeat(s string) *Repeater {
 	return &Repeater{Key: key, Times: n}
 }
 
-func parseRandSize(s string) (from, to, time int64, err error) {
+func parseRandSize(s string) (ranged bool, paddingSize int, from, to, time int64, err error) {
 	p := strings.Index(s, "-")
 	times := int64(0)
 	if p < 0 {
-		if times, err = strconv.ParseInt(s, 10, 64); err != nil {
-			return 0, 0, 0, err
+		if strings.HasPrefix(s, "0") {
+			paddingSize = len(s)
 		}
-		return times, times, times, nil
+		if times, err = strconv.ParseInt(strings.TrimLeft(s, "0"), 10, 64); err != nil {
+			return ranged, 0, 0, 0, 0, err
+		}
+		return ranged, paddingSize, times, times, times, nil
 	}
 
-	from, err1 := strconv.ParseInt(s[:p], 10, 64)
-	if err1 != nil {
-		return 0, 0, 0, err1
+	ranged = true
+
+	if strings.HasPrefix(s[:p], "0") {
+		paddingSize = len(s[:p])
 	}
+
+	fromExpr := strings.TrimLeft(s[:p], "0")
+
+	from, err1 := strconv.ParseInt(fromExpr, 10, 64)
+	if err1 != nil {
+		return ranged, 0, 0, 0, 0, err1
+	}
+
 	to, err2 := strconv.ParseInt(s[p+1:], 10, 64)
 	if err2 != nil {
-		return 0, 0, 0, err2
+		return ranged, 0, 0, 0, 0, err2
 	}
 	times = randx.Int64Between(from, to)
-	return from, to, times, nil
+	return ranged, paddingSize, from, to, times, nil
 }
 
 type (
@@ -543,12 +555,18 @@ func RandomInt(args string) interface{} {
 		return randx.Int64()
 	}
 
-	if i, err := strconv.ParseInt(args, 10, 64); err == nil {
-		return randx.Int64Between(0, i)
-	}
+	if ranged, paddingSize, from, to, _, err := parseRandSize(args); err == nil {
+		var n int64
+		if from < to || ranged {
+			n = randx.Int64Between(from, to)
+		} else {
+			n = randx.Int64N(to)
+		}
 
-	if from, to, _, err := parseRandSize(args); err == nil {
-		return randx.Int64Between(from, to)
+		if paddingSize <= 0 {
+			return n
+		}
+		return fmt.Sprintf("%0*d", paddingSize, n)
 	}
 
 	var err error
