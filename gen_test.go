@@ -14,7 +14,7 @@ func TestGenKeyHitRepeat(t *testing.T) {
 
 func TestGenKeyHitRepeatObjectId(t *testing.T) {
 	gen := jj.NewGen()
-	gen.RegisterFn("对象ID", func(args string) interface{} { return 456 })
+	gen.RegisterFn("对象ID", func(args string) any { return 456 })
 	assert.Equal(t, `{"id":"456456"}`, gen.Gen(`{"id|2": "@对象ID" }`))
 }
 
@@ -37,22 +37,22 @@ func TestGenRepeatInt2(t *testing.T) {
 func TestGenRepeatObjectId(t *testing.T) {
 	gen := jj.NewGen()
 	gen.MockTimes = 2
-	gen.RegisterFn("objectId", func(args string) interface{} { return 456 })
+	gen.RegisterFn("objectId", func(args string) any { return 456 })
 	assert.Equal(t, `[{"id":456},{"id":456}]`, gen.Gen(`["|2-7", { "id": "@objectId" }]`))
 }
 
 func TestGenRepeat2(t *testing.T) {
 	gen := jj.NewGen()
 	gen.MockTimes = 2
-	gen.RegisterFn("objectId", func(args string) interface{} { return 456 })
-	gen.RegisterFn("random", func(args string) interface{} { return 1010 })
+	gen.RegisterFn("objectId", func(args string) any { return 456 })
+	gen.RegisterFn("random", func(args string) any { return 1010 })
 	out, _ := gen.Process(`["|2-7", { "id": "@objectId",  "tags": ["|3", "@random(10)"] }]`)
 	assert.Equal(t, `[{"id":456,"tags":[1010,1010]},{"id":456,"tags":[1010,1010]}]`, out.Out)
 }
 
 func TestGenObjectId(t *testing.T) {
 	gen := jj.NewGen()
-	gen.RegisterFn("objectId", func(args string) interface{} { return "123" })
+	gen.RegisterFn("objectId", func(args string) any { return "123" })
 	assert.Equal(t, `{"id":"123"}`, gen.Gen(` {"id": "@objectId"} `))
 }
 

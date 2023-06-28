@@ -109,12 +109,12 @@ func BenchmarkGJSONUnmarshalMap(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		for j := 0; j < len(benchPaths); j++ {
 			parts := strings.Split(benchPaths[j], ".")
-			m, _ := Parse(exampleJSON).Value().(map[string]interface{})
-			var v interface{}
+			m, _ := Parse(exampleJSON).Value().(map[string]any)
+			var v any
 			for len(parts) > 0 {
 				part := parts[0]
 				if len(parts) > 1 {
-					m = m[part].(map[string]interface{})
+					m = m[part].(map[string]any)
 					if m == nil {
 						t.Fatal("did not find the value")
 					}
@@ -136,15 +136,15 @@ func BenchmarkJSONUnmarshalMap(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		for j := 0; j < len(benchPaths); j++ {
 			parts := strings.Split(benchPaths[j], ".")
-			var m map[string]interface{}
+			var m map[string]any
 			if err := json.Unmarshal([]byte(exampleJSON), &m); err != nil {
 				t.Fatal(err)
 			}
-			var v interface{}
+			var v any
 			for len(parts) > 0 {
 				part := parts[0]
 				if len(parts) > 1 {
-					m = m[part].(map[string]interface{})
+					m = m[part].(map[string]any)
 					if m == nil {
 						t.Fatal("did not find the value")
 					}

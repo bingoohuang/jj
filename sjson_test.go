@@ -31,7 +31,7 @@ func sortJSON(json string) string {
 	return string(Ugly(Pretty([]byte(json), Options{SortKeys: true})))
 }
 
-func testRaw(t *testing.T, kind int, expect, json, path string, value interface{}) {
+func testRaw(t *testing.T, kind int, expect, json, path string, value any) {
 	t.Helper()
 	expect = sortJSON(expect)
 	var json2 string
@@ -251,9 +251,9 @@ type testError struct {
 	desc       string
 	i          int
 	lenInput   int
-	input      interface{}
-	expected   interface{}
-	result     interface{}
+	input      any
+	expected   any
+	result     any
 }
 
 func fmtErrorf(e testError) string {

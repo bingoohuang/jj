@@ -14,7 +14,7 @@ func init() {
 }
 
 type tItem struct {
-	key interface{}
+	key any
 	val int
 }
 
@@ -77,7 +77,7 @@ func TestLRU(t *testing.T) {
 
 	idx := size - 1
 	res := make([]tItem, size)
-	cache.Range(func(key, value interface{}) bool {
+	cache.Range(func(key, value any) bool {
 		res[idx] = tItem{key: key, val: value.(int)}
 		idx--
 		return true
@@ -88,7 +88,7 @@ func TestLRU(t *testing.T) {
 		}
 	}
 	var recent tItem
-	cache.Range(func(key, value interface{}) bool {
+	cache.Range(func(key, value any) bool {
 		recent = tItem{key: key, val: value.(int)}
 		return false
 	})
@@ -98,7 +98,7 @@ func TestLRU(t *testing.T) {
 
 	idx = size - 1
 	res = make([]tItem, size)
-	cache.Reverse(func(key, value interface{}) bool {
+	cache.Reverse(func(key, value any) bool {
 		res[idx] = tItem{key: key, val: value.(int)}
 		idx--
 		return true
@@ -109,7 +109,7 @@ func TestLRU(t *testing.T) {
 		}
 	}
 	var least tItem
-	cache.Reverse(func(key, value interface{}) bool {
+	cache.Reverse(func(key, value any) bool {
 		least = tItem{key: key, val: value.(int)}
 		return false
 	})

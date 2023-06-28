@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-func j(js interface{}) string {
-	var v interface{}
+func j(js any) string {
+	var v any
 	if err := json.Unmarshal([]byte(fmt.Sprintf("%s", js)), &v); err != nil {
 		fmt.Printf(">>%s<<\n", js)
 		panic(err)
@@ -44,13 +44,13 @@ var example1 = []byte(`
 
 var example2 = `[ 0, 10, 10.10, true, false, null, "hello \" "]`
 
-func assertNil(t *testing.T, a interface{}) {
+func assertNil(t *testing.T, a any) {
 	if a != nil {
 		t.Fatalf("%v is not nil", a)
 	}
 }
 
-func assertEqual(t *testing.T, a, b interface{}) {
+func assertEqual(t *testing.T, a, b any) {
 	t.Helper()
 	if !reflect.DeepEqual(a, b) {
 		t.Fatalf("Not equal\n\t'%v'\n\t'%v'", a, b)

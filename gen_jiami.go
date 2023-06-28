@@ -17,7 +17,7 @@ var (
 	encoderInitOnce sync.Once
 )
 
-func invokeJiami(result interface{}, wrapper string) interface{} {
+func invokeJiami(result any, wrapper string) any {
 	if wrapper != "..jiami" {
 		return result
 	}
@@ -44,14 +44,14 @@ func invokeJiami(result interface{}, wrapper string) interface{} {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
-func wrapJiami(f func(args string) interface{}, wrapper string) func(args string) interface{} {
+func wrapJiami(f func(args string) any, wrapper string) func(args string) any {
 	if wrapper == "" {
 		return f
 	}
 	if wrapper == "..jiami" {
 		encoderInitOnce.Do(initJiami)
 
-		return func(args string) interface{} {
+		return func(args string) any {
 			result := f(args)
 			return invokeJiami(result, wrapper)
 		}

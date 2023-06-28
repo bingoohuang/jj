@@ -32,42 +32,70 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-var DefaultSubstituteFns = map[string]interface{}{
+var DefaultSubstituteFns = map[string]any{
 	"ip":           RandomIP,
 	"random":       Random,
 	"random_int":   RandomInt,
-	"random_bool":  func(_ string) interface{} { return randx.Bool() },
+	"random_bool":  func(_ string) any { return randx.Bool() },
 	"random_time":  RandomTime,
 	"random_image": RandomImage, // @random_image(format=jpg size=640x320)
-	"objectId":     func(string) interface{} { return NewObjectID().Hex() },
+	"objectId":     func(string) any { return NewObjectID().Hex() },
 	"regex":        Regex,
-	"uuid":         func(_ string) interface{} { return NewUUID().String() },
+	"uuid":         func(_ string) any { return NewUUID().String() },
 	"base64":       RandomBase64, // @base64(size=1000 std raw file=dir/f.png)
-	"name":         func(_ string) interface{} { return randomdata.SillyName() },
-	"ksuid":        func(_ string) interface{} { v, _ := uid.NewRandom(); return v.String() },
-	"汉字":           func(_ string) interface{} { return chinaid.RandChinese(2, 3) },
-	"姓名":           func(_ string) interface{} { return chinaid.Name() },
-	"性别":           func(_ string) interface{} { return chinaid.Sex() },
-	"地址":           func(_ string) interface{} { return chinaid.Address() },
-	"手机":           func(_ string) interface{} { return chinaid.Mobile() },
-	"身份证":          func(_ string) interface{} { return chinaid.ChinaID() },
-	"发证机关":         func(_ string) interface{} { return chinaid.IssueOrg() },
-	"邮箱":           func(_ string) interface{} { return chinaid.Email() },
-	"银行卡":          func(_ string) interface{} { return chinaid.BankNo() },
-	"env":          func(name string) interface{} { return os.Getenv(name) },
-	"file": func(name string) interface{} {
-		d, err := os.ReadFile(name)
-		if err != nil {
-			log.Fatalf("F! read file %s failed: %v", name, err)
+	"name":         func(_ string) any { return randomdata.SillyName() },
+	"ksuid":        func(_ string) any { v, _ := uid.NewRandom(); return v.String() },
+	"汉字":           func(_ string) any { return chinaid.RandChinese(2, 3) },
+	"姓名":           func(_ string) any { return chinaid.Name() },
+	"性别":           func(_ string) any { return chinaid.Sex() },
+	"地址":           func(_ string) any { return chinaid.Address() },
+	"手机":           func(_ string) any { return chinaid.Mobile() },
+	"身份证":          func(_ string) any { return chinaid.ChinaID() },
+	"发证机关":         func(_ string) any { return chinaid.IssueOrg() },
+	"邮箱":           func(_ string) any { return chinaid.Email() },
+	"银行卡":          func(_ string) any { return chinaid.BankNo() },
+	"env":          func(name string) any { return os.Getenv(name) },
+	"file":         atFile,
+	"seq":          SubstitutionFnGen(SeqGenerator),
+}
+
+func atFile(args string) any {
+	fileArgs := strings.Split(args, ",")
+	name := fileArgs[0]
+	d, err := os.ReadFile(name)
+	if err != nil {
+		log.Fatalf("F! read file %s failed: %v", name, err)
+	}
+
+	useBytes := false
+	useBase64 := false
+	useHex := false
+	for i := 1; i < len(fileArgs); i++ {
+		switch option := strings.ToLower(fileArgs[i]); option {
+		case ":bytes":
+			useBytes = true
+		case ":hex":
+			useHex = true
+		case ":base64":
+			useBase64 = true
 		}
+	}
+
+	switch {
+	case useBase64:
+		return base64.StdEncoding.EncodeToString(d)
+	case useHex:
+		return hex.EncodeToString(d)
+	case useBytes:
+		return d
+	default:
 		return string(d)
-	},
-	"seq": SubstitutionFnGen(SeqGenerator),
+	}
 }
 
 // RandomImage creates a random image.
 // checked on https://codebeautify.org/base64-to-image-converter
-func RandomImage(conf string) interface{} {
+func RandomImage(conf string) any {
 	arg := struct {
 		Format string
 		Size   string
@@ -123,23 +151,23 @@ func parseImageSize(val string) (width, height int) {
 }
 
 type Substituter struct {
-	raw     map[string]interface{}
+	raw     map[string]any
 	gen     map[string]SubstitutionFn
 	genLock sync.RWMutex
 }
 
-func NewSubstituter(m map[string]interface{}) *Substituter {
+func NewSubstituter(m map[string]any) *Substituter {
 	return &Substituter{
 		raw: m,
 		gen: map[string]SubstitutionFn{},
 	}
 }
 
-func (r *Substituter) Register(fn string, f interface{}) { r.raw[fn] = f }
+func (r *Substituter) Register(fn string, f any) { r.raw[fn] = f }
 
 type Substitute interface {
 	vars.Valuer
-	Register(fn string, f interface{})
+	Register(fn string, f any)
 }
 
 type GenRun struct {
@@ -277,7 +305,7 @@ func (r *GenRun) repeatStr(element string) {
 	r.repeater = nil
 }
 
-func (r *Substituter) Value(name, params, expr string) interface{} {
+func (r *Substituter) Value(name, params, expr string) any {
 	r.genLock.RLock()
 	f, ok := r.gen[name]
 	r.genLock.RUnlock()
@@ -303,7 +331,7 @@ func (r *Substituter) Value(name, params, expr string) interface{} {
 			r.gen[fullname] = f
 			return f(params)
 		}
-		if gt, ok := g.(func(args string) func(args string) interface{}); ok {
+		if gt, ok := g.(func(args string) func(args string) any); ok {
 			f := wrapJiami(gt(params), wrapper)
 			r.gen[fullname] = f
 			return f(params)
@@ -313,14 +341,14 @@ func (r *Substituter) Value(name, params, expr string) interface{} {
 			r.gen[fullname] = f
 			return f(params)
 		}
-		if gt, ok := g.(func(args string) interface{}); ok {
+		if gt, ok := g.(func(args string) any); ok {
 			f := wrapJiami(gt, wrapper)
 			r.gen[fullname] = f
 			return f(params)
 		}
 	}
 
-	f = wrapJiami(func(args string) interface{} {
+	f = wrapJiami(func(args string) any {
 		return expr
 	}, wrapper)
 	r.gen[fullname] = f
@@ -389,11 +417,11 @@ func parseRandSize(s string) (ranged bool, paddingSize int, from, to, time int64
 }
 
 type (
-	SubstitutionFn    func(args string) interface{}
-	SubstitutionFnGen func(args string) func(args string) interface{}
+	SubstitutionFn    func(args string) any
+	SubstitutionFnGen func(args string) func(args string) any
 )
 
-func (r *GenContext) RegisterFn(fn string, f interface{}) { r.Substitute.Register(fn, f) }
+func (r *GenContext) RegisterFn(fn string, f any) { r.Substitute.Register(fn, f) }
 
 var DefaultGen = NewGen()
 
@@ -443,7 +471,7 @@ func SplitTrim(s, sep string) []string {
 	return p2
 }
 
-func RandomTime(args string) interface{} {
+func RandomTime(args string) any {
 	t := randx.Time()
 	if args == "" {
 		return t.Format(time.RFC3339Nano)
@@ -495,26 +523,26 @@ func filter(pp []string, s string) (filtered []string, found bool) {
 
 var SeqStart = uint64(env.Int("SEQ", 0))
 
-func SeqGenerator(args string) func(args string) interface{} {
+func SeqGenerator(args string) func(args string) any {
 	if args == "" {
-		return func(args string) interface{} {
+		return func(args string) any {
 			return atomic.AddUint64(&SeqStart, 1)
 		}
 	}
 
 	if i, err := strconv.ParseUint(args, 10, 64); err == nil {
-		return func(args string) interface{} {
+		return func(args string) any {
 			return atomic.AddUint64(&i, 1) - 1
 		}
 	}
 
 	log.Printf("bad argument %s for @seq, should use int like @seq(1000)", args)
-	return func(args string) interface{} {
+	return func(args string) any {
 		return 0
 	}
 }
 
-func RandomIP(args string) interface{} {
+func RandomIP(args string) any {
 	if args == "" || args == "v4" {
 		buf := make([]byte, 4)
 		binary.LittleEndian.PutUint32(buf, rand.Uint32())
@@ -550,7 +578,7 @@ func RandomIP(args string) interface{} {
 	return "127.0.0.1"
 }
 
-func RandomInt(args string) interface{} {
+func RandomInt(args string) any {
 	if args == "" {
 		return randx.Int64()
 	}
@@ -595,7 +623,7 @@ func RandomInt(args string) interface{} {
 
 var argRegexp = regexp.MustCompile(`([^\s=]+)\s*(?:=\s*(\S+))?`)
 
-func ParseConf(args string, v interface{}) {
+func ParseConf(args string, v any) {
 	MapToConf(ParseArguments(args), v)
 }
 
@@ -610,7 +638,7 @@ func ParseArguments(args string) map[string][]string {
 	return result
 }
 
-func MapToConf(source map[string][]string, v interface{}) {
+func MapToConf(source map[string][]string, v any) {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
 		panic("v should be pointer to struct ")
@@ -671,7 +699,7 @@ func MapToConf(source map[string][]string, v interface{}) {
 	}
 }
 
-func RandomBase64(args string) interface{} {
+func RandomBase64(args string) any {
 	arg := struct {
 		Size string
 		Std  bool
@@ -710,7 +738,7 @@ func RandomBase64(args string) interface{} {
 	return encoding.EncodeToString(token)
 }
 
-func Random(args string) interface{} {
+func Random(args string) any {
 	if args == "" {
 		return randx.String(10)
 	}
@@ -743,7 +771,7 @@ func Random(args string) interface{} {
 	return randx.String(10)
 }
 
-func Regex(args string) interface{} {
+func Regex(args string) any {
 	g, err := reggen.Generate(args, 100)
 	if err != nil {
 		log.Printf("bad regex: %s, err: %v", args, err)

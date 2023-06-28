@@ -61,11 +61,11 @@ type args struct {
 	iterateArray, parseInnerJSONString    bool
 	countingItems                         bool
 
-	jsonMap map[string]interface{}
+	jsonMap map[string]any
 }
 
 func parseArgs() args {
-	fail := func(format string, args ...interface{}) {
+	fail := func(format string, args ...any) {
 		fmt.Fprintf(os.Stderr, "%s\n", tag)
 		if format != "" {
 			fmt.Fprintf(os.Stderr, format+"\n", args...)
@@ -82,7 +82,7 @@ func parseArgs() args {
 	}
 
 	var a args
-	a.jsonMap = make(map[string]interface{})
+	a.jsonMap = make(map[string]any)
 
 	for i := 1; i < len(os.Args); i++ {
 		switch os.Args[i] {
@@ -324,7 +324,7 @@ func (a args) createOut(outChan chan Out) {
 	if !a.keypathok {
 		out.Data = input
 	} else if a.expr {
-		env := map[string]interface{}{}
+		env := map[string]any{}
 		if err := json.Unmarshal(input, &env); err != nil {
 			panic(err)
 		}

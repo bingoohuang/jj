@@ -13,21 +13,21 @@ func GenWithCache(s string) string {
 
 func NewCachingSubstituter() Substitute {
 	internal := NewSubstituter(DefaultSubstituteFns)
-	return &cacheValuer{Map: make(map[string]interface{}), internal: internal}
+	return &cacheValuer{Map: make(map[string]any), internal: internal}
 }
 
 type cacheValuer struct {
-	Map      map[string]interface{}
+	Map      map[string]any
 	internal *Substituter
 }
 
-func (v *cacheValuer) Register(fn string, f interface{}) {
+func (v *cacheValuer) Register(fn string, f any) {
 	v.internal.Register(fn, f)
 }
 
 var cacheSuffix = regexp.MustCompile(`^(.+)_\d+`)
 
-func (v *cacheValuer) Value(name, params, expr string) interface{} {
+func (v *cacheValuer) Value(name, params, expr string) any {
 	wrapper := ""
 	if p := strings.LastIndex(name, ".."); p > 0 {
 		wrapper = name[p:]
