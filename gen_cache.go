@@ -7,8 +7,12 @@ import (
 	"github.com/bingoohuang/gg/pkg/vars"
 )
 
-func GenWithCache(s string) string {
-	return vars.ToString(vars.ParseExpr(s).Eval(NewCachingSubstituter()))
+func GenWithCache(s string) (string, error) {
+	ret, err := vars.ParseExpr(s).Eval(NewCachingSubstituter())
+	if err != nil {
+		return "", err
+	}
+	return vars.ToString(ret), nil
 }
 
 func NewCachingSubstituter() Substitute {
@@ -27,7 +31,7 @@ func (v *cacheValuer) Register(fn string, f any) {
 
 var cacheSuffix = regexp.MustCompile(`^(.+)_\d+`)
 
-func (v *cacheValuer) Value(name, params, expr string) any {
+func (v *cacheValuer) Value(name, params, expr string) (any, error) {
 	wrapper := ""
 	if p := strings.LastIndex(name, ".."); p > 0 {
 		wrapper = name[p:]
@@ -45,10 +49,13 @@ func (v *cacheValuer) Value(name, params, expr string) any {
 		}
 	}
 
-	x := v.internal.Value(pureName+wrapper, params, expr)
+	x, err := v.internal.Value(pureName+wrapper, params, expr)
+	if err != nil {
+		return nil, err
+	}
 
 	if hasCachingResultTip {
 		v.Map[name] = x
 	}
-	return x
+	return x, nil
 }

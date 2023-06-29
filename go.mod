@@ -6,7 +6,7 @@ require (
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/antonmedv/expr v1.12.5
 	github.com/bingoohuang/easyjson v0.0.0-20211118132814-5606aa48c508
-	github.com/bingoohuang/gg v0.0.0-20230510011343-87bfcf343abf
+	github.com/bingoohuang/gg v0.0.0-20230629095648-3af2bb83aab6
 	github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4
 	github.com/buger/jsonparser v1.1.1
 	github.com/cristalhq/base64 v0.1.2

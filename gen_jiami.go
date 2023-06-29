@@ -17,9 +17,9 @@ var (
 	encoderInitOnce sync.Once
 )
 
-func invokeJiami(result any, wrapper string) any {
+func invokeJiami(result any, wrapper string) (any, error) {
 	if wrapper != "..jiami" {
-		return result
+		return result, nil
 	}
 
 	encoderInitOnce.Do(initJiami)
@@ -34,25 +34,28 @@ func invokeJiami(result any, wrapper string) any {
 	}
 	encoded, err := encoder.Encrypt(aesKey, plain)
 	if err != nil {
-		log.Fatalf("encrypt failed: %v", err)
+		return nil, fmt.Errorf("encrypt: %w", err)
 	}
 
 	b, err := msgpack.Marshal(encoded)
 	if err != nil {
-		log.Fatalf("msgpack.Marshal failed: %v", err)
+		return nil, fmt.Errorf("msgpack.Marshal: %w", err)
 	}
-	return base64.StdEncoding.EncodeToString(b)
+	return base64.StdEncoding.EncodeToString(b), nil
 }
 
-func wrapJiami(f func(args string) any, wrapper string) func(args string) any {
+func wrapJiami(f func(args string) (any, error), wrapper string) func(args string) (any, error) {
 	if wrapper == "" {
 		return f
 	}
 	if wrapper == "..jiami" {
 		encoderInitOnce.Do(initJiami)
 
-		return func(args string) any {
-			result := f(args)
+		return func(args string) (any, error) {
+			result, err := f(args)
+			if err != nil {
+				return nil, err
+			}
 			return invokeJiami(result, wrapper)
 		}
 

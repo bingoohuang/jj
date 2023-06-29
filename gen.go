@@ -59,12 +59,12 @@ var DefaultSubstituteFns = map[string]any{
 	"seq":          SubstitutionFnGen(SeqGenerator),
 }
 
-func atFile(args string) any {
+func atFile(args string) (any, error) {
 	fileArgs := strings.Split(args, ",")
 	name := fileArgs[0]
 	d, err := os.ReadFile(name)
 	if err != nil {
-		log.Fatalf("F! read file %s failed: %v", name, err)
+		return nil, fmt.Errorf("read file %s: %w", name, err)
 	}
 
 	useBytes := false
@@ -83,13 +83,13 @@ func atFile(args string) any {
 
 	switch {
 	case useBase64:
-		return base64.StdEncoding.EncodeToString(d)
+		return base64.StdEncoding.EncodeToString(d), nil
 	case useHex:
-		return hex.EncodeToString(d)
+		return hex.EncodeToString(d), nil
 	case useBytes:
-		return d
+		return d, nil
 	default:
-		return string(d)
+		return string(d), nil
 	}
 }
 
@@ -152,14 +152,14 @@ func parseImageSize(val string) (width, height int) {
 
 type Substituter struct {
 	raw     map[string]any
-	gen     map[string]SubstitutionFn
+	gen     map[string]SubstitutionErrorFn
 	genLock sync.RWMutex
 }
 
 func NewSubstituter(m map[string]any) *Substituter {
 	return &Substituter{
 		raw: m,
-		gen: map[string]SubstitutionFn{},
+		gen: map[string]SubstitutionErrorFn{},
 	}
 }
 
@@ -179,6 +179,7 @@ type GenRun struct {
 
 	*GenContext
 	repeaterWait bool
+	Err          error
 }
 
 type GenContext struct {
@@ -198,11 +199,18 @@ func (r *GenRun) walk(start, end, info int) int {
 		if r.repeater != nil {
 			src := r.Src[start:]
 			r.repeater.Repeat(func(last bool) {
-				p, _ := r.GenContext.Process(src)
+				p, _, err := r.GenContext.Process(src)
+				if err != nil {
+					r.Err = err
+					return
+				}
 				if r.Out += p.Out; !last {
 					r.Out += ","
 				}
 			})
+			if r.Err != nil {
+				return 0
+			}
 			r.repeater = nil
 			r.BreakRepeater = true
 			return -1
@@ -231,20 +239,35 @@ func (r *GenRun) walk(start, end, info int) int {
 		case IsToken(info, TokValue):
 			if subs := vars.ParseExpr(s); subs.CountVars() > 0 {
 				if r.repeater == nil {
-					r.Out += r.Eval(subs, true)
+					ret, err := r.Eval(subs, true)
+					if err != nil {
+						r.Err = err
+						return 0
+					}
+					r.Out += ret
 					return 1
 				}
 
 				repeatedValue := ""
 				r.repeater.Repeat(func(last bool) {
 					if r.repeater.Key == "" {
-						if r.Out += r.Eval(subs, true); !last {
+						ret, err := r.Eval(subs, true)
+						if err != nil {
+							r.Err = err
+							return
+						}
+						if r.Out += ret; !last {
 							r.Out += ","
 						}
 					} else {
-						repeatedValue += r.Eval(subs, false)
+						ret, err := r.Eval(subs, false)
+						r.Err = err
+						repeatedValue += ret
 					}
 				})
+				if r.Err != nil {
+					return 0
+				}
 				if r.repeater.Key != "" {
 					r.Out += strconv.Quote(repeatedValue)
 				}
@@ -272,17 +295,20 @@ func (r *GenRun) walk(start, end, info int) int {
 	return Ifi(r.Opens > 0, 1, 0)
 }
 
-func (r *GenRun) Eval(subs vars.Subs, quote bool) (s string) {
-	result := subs.Eval(r.Substitute)
-	if v, ok := result.(string); ok {
+func (r *GenRun) Eval(subs vars.Subs, quote bool) (s string, err error) {
+	ret, err := subs.Eval(r.Substitute)
+	if err != nil {
+		return "", err
+	}
+	if v, ok := ret.(string); ok {
 		if quote {
-			return strconv.Quote(v)
+			return strconv.Quote(v), nil
 		}
 
-		return v
+		return v, nil
 	}
 
-	return vars.ToString(result)
+	return vars.ToString(ret), nil
 }
 
 func (r *GenRun) repeatStr(element string) {
@@ -305,7 +331,7 @@ func (r *GenRun) repeatStr(element string) {
 	r.repeater = nil
 }
 
-func (r *Substituter) Value(name, params, expr string) any {
+func (r *Substituter) Value(name, params, expr string) (any, error) {
 	r.genLock.RLock()
 	f, ok := r.gen[name]
 	r.genLock.RUnlock()
@@ -327,29 +353,58 @@ func (r *Substituter) Value(name, params, expr string) any {
 
 	if g, ok := r.raw[name]; ok {
 		if gt, ok := g.(SubstitutionFnGen); ok {
+			f := wrapJiami(func(args string) (any, error) {
+				return gt(params), nil
+			}, wrapper)
+			r.gen[fullname] = f
+			return f(params)
+		}
+
+		if gt, ok := g.(SubstitutionErrorFnGen); ok {
 			f := wrapJiami(gt(params), wrapper)
 			r.gen[fullname] = f
 			return f(params)
 		}
 		if gt, ok := g.(func(args string) func(args string) any); ok {
+			f := wrapJiami(func(args string) (any, error) {
+				return gt(params), nil
+			}, wrapper)
+			r.gen[fullname] = f
+			return f(params)
+		}
+		if gt, ok := g.(func(args string) func(args string) (any, error)); ok {
 			f := wrapJiami(gt(params), wrapper)
 			r.gen[fullname] = f
 			return f(params)
 		}
 		if gt, ok := g.(SubstitutionFn); ok {
+			f := wrapJiami(func(args string) (any, error) {
+				return gt(args), nil
+			}, wrapper)
+			r.gen[fullname] = f
+			return f(params)
+		}
+		if gt, ok := g.(SubstitutionErrorFn); ok {
 			f := wrapJiami(gt, wrapper)
 			r.gen[fullname] = f
 			return f(params)
 		}
 		if gt, ok := g.(func(args string) any); ok {
+			f := wrapJiami(func(args string) (any, error) {
+				return gt(args), nil
+			}, wrapper)
+			r.gen[fullname] = f
+			return f(params)
+		}
+		if gt, ok := g.(func(args string) (any, error)); ok {
 			f := wrapJiami(gt, wrapper)
 			r.gen[fullname] = f
 			return f(params)
 		}
 	}
 
-	f = wrapJiami(func(args string) any {
-		return expr
+	f = wrapJiami(func(args string) (any, error) {
+		return expr, nil
 	}, wrapper)
 	r.gen[fullname] = f
 	return f(params)
@@ -417,25 +472,31 @@ func parseRandSize(s string) (ranged bool, paddingSize int, from, to, time int64
 }
 
 type (
-	SubstitutionFn    func(args string) any
-	SubstitutionFnGen func(args string) func(args string) any
+	SubstitutionFn         func(args string) any
+	SubstitutionErrorFn    func(args string) (any, error)
+	SubstitutionFnGen      func(args string) func(args string) any
+	SubstitutionErrorFnGen func(args string) func(args string) (any, error)
 )
 
 func (r *GenContext) RegisterFn(fn string, f any) { r.Substitute.Register(fn, f) }
 
 var DefaultGen = NewGen()
 
-func Gen(src string) string { return DefaultGen.Gen(src) }
+func Gen(src string) (string, error) { return DefaultGen.Gen(src) }
 
-func (r *GenContext) Gen(src string) string {
-	p, _ := r.Process(src)
-	return p.Out
+func (r *GenContext) Gen(src string) (string, error) {
+	p, _, err := r.Process(src)
+	if err != nil {
+		return "", err
+	}
+
+	return p.Out, err
 }
 
-func (r *GenContext) Process(src string) (*GenRun, int) {
+func (r *GenContext) Process(src string) (*GenRun, int, error) {
 	gr := &GenRun{Src: src, GenContext: r}
 	ret := StreamParse([]byte(src), gr.walk)
-	return gr, ret
+	return gr, ret, gr.Err
 }
 
 func Ifi(b bool, x, y int) int {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"os"
 	"regexp"
@@ -501,11 +502,16 @@ func GetEnvInt(name string, defaultValue int) int {
 
 func (a args) generate(outChan chan Out, input []byte) {
 	gen := jj.NewGen()
+	defer close(outChan)
 
 	for j := 0; j < GetEnvInt(`JJ_N`, 1); j++ {
 		s := string(input)
 		for {
-			genResult, i := gen.Process(s)
+			genResult, i, err := gen.Process(s)
+			if err != nil {
+				log.Printf("error: %v", err)
+				return
+			}
 			if i <= 0 {
 				break
 			}
@@ -514,8 +520,6 @@ func (a args) generate(outChan chan Out, input []byte) {
 			s = s[i:]
 		}
 	}
-
-	close(outChan)
 }
 
 func createInput(a args) ([]byte, error) {

@@ -4,8 +4,8 @@ github.com/antonmedv/expr v1.12.5 h1:Fq4okale9swwL3OeLLs9WD9H6GbgBLJyN/NUHRv+n0E
 github.com/antonmedv/expr v1.12.5/go.mod h1:FPC8iWArxls7axbVLsW+kpg1mz29A1b2M6jt+hZfDkU=
 github.com/bingoohuang/easyjson v0.0.0-20211118132814-5606aa48c508 h1:Ew6KVZFgaX/C93v95gc1spL8H+4pis70mLSXFlvyk0E=
 github.com/bingoohuang/easyjson v0.0.0-20211118132814-5606aa48c508/go.mod h1:pj5RZaMJwbOBOXIzDlvOY1kQBJ1unO/XA+gHt17QxBQ=
-github.com/bingoohuang/gg v0.0.0-20230510011343-87bfcf343abf h1:37QA6XgDqUvyfboy4A3DUtr2tyWag3wzS93oBYJ8xpY=
-github.com/bingoohuang/gg v0.0.0-20230510011343-87bfcf343abf/go.mod h1:FlxNmqdey1AN7uhk11CbMU6RYnppyidLqF8u5KL5IEk=
+github.com/bingoohuang/gg v0.0.0-20230629095648-3af2bb83aab6 h1:90R7sz2Hvs9GacCA2qLhdBX82tFOkoV1+8r1KGN6/TU=
+github.com/bingoohuang/gg v0.0.0-20230629095648-3af2bb83aab6/go.mod h1:FlxNmqdey1AN7uhk11CbMU6RYnppyidLqF8u5KL5IEk=
 github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4 h1:+VmCTioMLui7PJgGD0AGOq44ls7GVYqxqv5NY1nncvY=
 github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4/go.mod h1:orsb36bWkIn1YzTj9vxKi61P/RJj4eopmi8dyrOFeEY=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
