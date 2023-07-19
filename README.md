@@ -1188,3 +1188,4 @@ jj -O -v 12A features.10000.properties.LOT_NUM > /dev/null  0.22s user 0.27s sys
 3. [online converter, transform.tools ,toml-to-json, json-to-go](https://transform.tools/json-to-go)
 4. [songsterr.com, guitar tabs data api](https://www.songsterr.com/a/ra/songs.json?pattern=Beatles)
 5. [dtgorski/jsonlex](https://github.com/dtgorski/jsonlex) Fast JSON lexer (tokenizer) with no memory footprint and no garbage collector pressure (zero heap allocations).
+6. [valyala/fastjson(https://github.com/valyala/fastjson) fast JSON parser and validator for Go. Outperforms [jsonparser](https://github.com/buger/jsonparser) and gjson when accessing multiple unrelated fields, since fastjson parses the input JSON only once.
