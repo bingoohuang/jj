@@ -2593,9 +2593,9 @@ func TestIndexAtSymbol(t *testing.T) {
 }
 
 func TestDeepModifierWithOptions(t *testing.T) {
-	rawJson := `{"x":[{"y":[{"z":{"b":1, "c": 2, "a": 3}}]}]}`
+	rawJSON := `{"x":[{"y":[{"z":{"b":1, "c": 2, "a": 3}}]}]}`
 	jsonPathExpr := `x.#.y.#.z.@pretty:{"sortKeys":true}`
-	results := GetManyBytes([]byte(rawJson), jsonPathExpr)
+	results := GetManyBytes([]byte(rawJSON), jsonPathExpr)
 	assert(t, len(results) == 1)
 	actual := results[0].Raw
 	expected := `[[{
@@ -2605,7 +2605,7 @@ func TestDeepModifierWithOptions(t *testing.T) {
 }
 ]]`
 	if expected != actual {
-		t.Fatal(strconv.Quote(rawJson) + "\n\t" +
+		t.Fatal(strconv.Quote(rawJSON) + "\n\t" +
 			expected + "\n\t" +
 			actual + "\n\t<<< MISMATCH >>>")
 	}

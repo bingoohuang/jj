@@ -57,7 +57,7 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 28. $ echo '["|2", {"id":"@objectId", "sex":"@random(male,female)"}]' | jj -gu => [{"id":"60bcc26c6fbe0704ed2636cd","sex":"male"},{"id":"60bcc26c6fbe0704ed2636ce","sex":"female"}]
 29. $ jj -gu x=@objectId y='@random(男,女)' z='@random_int(20-60)' z2='@random_int(0020-60)' d='@random_time(yyyy-MM-dd)' v=@random_bool e='@regex([a-z]{5}@xyz[.]cn)' f=@ksuid
 {"d":"2054-02-10","e":"hpqlm@xyz.cn","f":"282aS8GZv76Tpgbqi1gibEHN5ja","v":false,"x":"625f5deb6af6dbce821573a4","y":"男","z":23,"z2":"0048"}
-29. $ JJ_N=3 jj -gu a=@姓名 b=@汉字 c=@性别 d=@地址 e=@手机 f=@身份证 g=@发证机关 h=@邮箱 i=@银行卡 j=@name 'k=@file(a.txt)' l1=@ip 'l2=@ip(192.0.2.0/24)' 'l3=@ip(v6)'
+29. $ JJ_N=3 jj -gu a=@姓名 b=@汉字(3) c=@性别 d=@地址 e=@手机 f=@身份证 g=@发证机关 h=@邮箱 i=@银行卡 j=@name 'k=@file(a.txt)' l1=@ip 'l2=@ip(192.0.2.0/24)' 'l3=@ip(v6)'
 {"a":"舒摋诌","b":"輕怱","c":"女","d":"贵州省遵义市陵愥路6559号闕槝小区1单元2180室","e":"13428224947","f":"824790200204033222","g":"洛阳市公安局某某分局","h":"gyafxwov@ccina.vip","i":"622960545294313799","j":"Jaycerulean"}
 29. more: @random_image(format=jpg size=640x320)  @base64(size=1000 std raw file=dir/f.png)
 30. $ echo '{"name":"Tom","age":18}' | jj -e 'age==18 and name=="Tom"'                       => true

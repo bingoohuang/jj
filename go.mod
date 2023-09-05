@@ -4,9 +4,9 @@ go 1.21.0
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
-	github.com/antonmedv/expr v1.14.3
+	github.com/antonmedv/expr v1.15.0
 	github.com/bingoohuang/easyjson v0.0.0-20230518060058-6bd4764f7688
-	github.com/bingoohuang/gg v0.0.0-20230830025406-ce0ab75156fc
+	github.com/bingoohuang/gg v0.0.0-20230905014901-c159304e8efe
 	github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4
 	github.com/buger/jsonparser v1.1.1
 	github.com/cristalhq/base64 v0.1.2
@@ -26,6 +26,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

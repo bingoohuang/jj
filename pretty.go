@@ -486,6 +486,7 @@ func init() {
 	}
 }
 
+// ColorOption defines the options to color JSON.
 type ColorOption struct {
 	CountEntries bool
 }

@@ -45,7 +45,7 @@ var DefaultSubstituteFns = map[string]any{
 	"base64":       RandomBase64, // @base64(size=1000 std raw file=dir/f.png)
 	"name":         func(_ string) any { return randomdata.SillyName() },
 	"ksuid":        func(_ string) any { v, _ := uid.NewRandom(); return v.String() },
-	"汉字":           func(_ string) any { return chinaid.RandChinese(2, 3) },
+	"汉字":           randomChinese,
 	"姓名":           func(_ string) any { return chinaid.Name() },
 	"性别":           func(_ string) any { return chinaid.Sex() },
 	"地址":           func(_ string) any { return chinaid.Address() },
@@ -623,7 +623,7 @@ func RandomIP(args string) any {
 
 		// create random 4-byte byte slice
 		r := make([]byte, 4)
-		rand.Read(r)
+		_, _ = crand.Read(r)
 
 		for i := 0; i <= quotient; i++ {
 			if i < quotient {
@@ -799,6 +799,18 @@ func RandomBase64(args string) any {
 	return encoding.EncodeToString(token)
 }
 
+func randomChinese(args string) any {
+	if ranged, _, from, to, _, err := parseRandSize(args); err == nil {
+		if from < to || ranged {
+			return chinaid.RandChinese(int(from), int(to))
+		}
+
+		return chinaid.RandChinese(int(to), int(to))
+	}
+
+	return chinaid.RandChinese(2, 3)
+}
+
 func Random(args string) any {
 	if args == "" {
 		return randx.String(10)
@@ -809,8 +821,7 @@ func Random(args string) any {
 
 	if size, err := humanize.ParseBytes(args); err == nil {
 		b := make([]byte, size*3/4)
-		rand.Seed(time.Now().UnixNano())
-		n, _ := rand.Read(b)
+		n, _ := crand.Read(b)
 		return base64.RawURLEncoding.EncodeToString(b[:n])
 	}
 
