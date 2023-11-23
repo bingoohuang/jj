@@ -34,7 +34,7 @@ options:
      -c         Print cheatsheet
      -C         Print items counting in colored output
      -u         Make json ugly, keypath is optional
-     -R         Create a random json, use env JJ_N for #element, e.g. JJ_N=10 jj -R
+     -R         Create a random json, use env N for #element, e.g. N=10 jj -R
      -r         Use raw values, otherwise types are auto-detected
      -n         Do not modifyOutput color or extra formatting
      -O         Performance boost for value updates
@@ -42,7 +42,7 @@ options:
      -l         Output array values on multiple lines
      -I         Print each child of json array
      -i infile  Use input file instead of stdin
-     -g         Generate random JSON by input, use env JJ_N for more times, e.g. JJ_N=3 jj -gu name=@name
+     -g         Generate random JSON by input, use env N for more times, e.g. N=3 jj -gu name=@name
      -e         Eval keypath value as an expression
      -p         Parse inner JSON string as a JSON
      -o outfile Use modifyOutput file instead of stdout
@@ -358,7 +358,7 @@ func (a args) randomJSON(outChan chan Out) {
 	randOptions := jj.DefaultRandOptions
 	randOptions.Pretty = false
 	times := 1
-	if j := os.Getenv("JJ_N"); j != "" {
+	if j := os.Getenv("N"); j != "" {
 		if strings.Contains(j, ",") {
 			k := strings.IndexByte(j, ',')
 			if times = ss.ParseInt(j[:k]); times < 1 {
@@ -501,10 +501,10 @@ func GetEnvInt(name string, defaultValue int) int {
 }
 
 func (a args) generate(outChan chan Out, input []byte) {
-	gen := jj.NewGen()
+	gen := jj.NewGenContext(jj.NewCachingSubstituter())
 	defer close(outChan)
 
-	for j := 0; j < GetEnvInt(`JJ_N`, 1); j++ {
+	for j := 0; j < GetEnvInt(`N`, 1); j++ {
 		s := string(input)
 		for {
 			genResult, i, err := gen.Process(s)

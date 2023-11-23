@@ -188,7 +188,8 @@ type GenContext struct {
 }
 
 func NewGenContext(s Substitute) *GenContext { return &GenContext{Substitute: s} }
-func NewGen() *GenContext                    { return NewGenContext(NewSubstituter(DefaultSubstituteFns)) }
+
+func NewGen() *GenContext { return NewGenContext(NewSubstituter(DefaultSubstituteFns)) }
 
 func (r *GenRun) walk(start, end, info int) int {
 	element := r.Src[start:end]
