@@ -353,9 +353,11 @@ func (r *Substituter) Value(name, params, expr string) (any, error) {
 
 	if g, ok := r.raw[name]; ok {
 		if gt, ok := g.(SubstitutionFnGen); ok {
-			f := wrapJiami(func(args string) (any, error) {
-				return gt(params), nil
-			}, wrapper)
+			gtf := gt(params)
+			f := func(args string) (any, error) {
+				return gtf(args), nil
+			}
+
 			r.gen[fullname] = f
 			return f(params)
 		}
@@ -366,8 +368,9 @@ func (r *Substituter) Value(name, params, expr string) (any, error) {
 			return f(params)
 		}
 		if gt, ok := g.(func(args string) func(args string) any); ok {
+			gtf := gt(params)
 			f := wrapJiami(func(args string) (any, error) {
-				return gt(params), nil
+				return gtf(args), nil
 			}, wrapper)
 			r.gen[fullname] = f
 			return f(params)
