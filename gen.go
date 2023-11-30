@@ -29,6 +29,7 @@ import (
 	"github.com/bingoohuang/gg/pkg/uid"
 	"github.com/bingoohuang/gg/pkg/vars"
 	"github.com/bingoohuang/jj/reggen"
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dustin/go-humanize"
 )
 
@@ -57,6 +58,12 @@ var DefaultSubstituteFns = map[string]any{
 	"env":          func(name string) any { return os.Getenv(name) },
 	"file":         atFile,
 	"seq":          SubstitutionFnGen(SeqGenerator),
+	"gofakeit":     Gofakeit,
+}
+
+func Gofakeit(args string) (any, error) {
+	value, err := gofakeit.Template(args, nil)
+	return value, err
 }
 
 func atFile(args string) (any, error) {
@@ -99,6 +106,7 @@ func RandomImage(conf string) any {
 	arg := struct {
 		Format string
 		Size   string
+		Way    int
 	}{}
 
 	ParseConf(conf, &arg)
@@ -120,15 +128,23 @@ func RandomImage(conf string) any {
 		PixelSize:  40,
 	}
 
-	data, _ := c.Gen(imgFormat)
-
+	var data []byte
 	result := ""
 	if imgFormat == ".png" {
-		result += "data:image/jpeg;base64,"
-	} else {
 		result += "data:image/png;base64,"
+		if arg.Way == 1 {
+			data = gofakeit.ImagePng(c.Width, c.Height)
+		}
+	} else {
+		result += "data:image/jpeg;base64,"
+		if arg.Way == 1 {
+			data = gofakeit.ImageJpeg(c.Width, c.Height)
+		}
 	}
 
+	if len(data) == 0 {
+		data, _ = c.Gen(imgFormat)
+	}
 	result += base64.StdEncoding.EncodeToString(data)
 	return result
 }

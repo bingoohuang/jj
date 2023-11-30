@@ -69,3 +69,4 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 35. $ echo '{"body":"{\\"_hl\\": \\"mockbin\\"}"}' | jj -pu     =>  {"body":{"_hl":"mockbin"}}
 36. $ N=10 jj -R => create random json object with 10 elements.
 37. $ N=10,5 jj -Ru => create 5 random json objects, each one has 10 elements.
+38. $ jj -gu a='@#gofakeit({{LetterN 100}})#' => gofakeit 模版，更多模板函数，见 gofakeit 官网
