@@ -356,10 +356,11 @@ func (a args) createOut(outChan chan Out) {
 	}
 
 	var out Out
-	outi := 0
-	var typ jj.Type
-	for outi < len(input) {
-		typ, outi, _ = jj.ValidPayload(input, 0)
+	for {
+		typ, outi, _ := jj.ValidPayload(input, 0)
+		if outi == 0 {
+			break
+		}
 		if typ == jj.JSON {
 			res := jj.GetBytes(input, a.keypath, jj.WithRawPath(a.rawKey))
 			a.assignOut(&out, res)
