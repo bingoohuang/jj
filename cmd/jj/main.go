@@ -321,10 +321,16 @@ func (a args) createOut(outChan chan Out) {
 		return
 	}
 
-	var out Out
 	if !a.keypathok {
+		var out Out
+
 		out.Data = input
-	} else if a.expr {
+		outChan <- out
+		close(outChan)
+		return
+	}
+
+	if a.expr {
 		env := map[string]any{}
 		if err := json.Unmarshal(input, &env); err != nil {
 			panic(err)
@@ -342,13 +348,26 @@ func (a args) createOut(outChan chan Out) {
 		if err != nil {
 			fail(err)
 		}
+		var out Out
 		a.assignOut(&out, jj.ParseBytes(v))
-	} else {
-		res := jj.GetBytes(input, a.keypath, jj.WithRawPath(a.rawKey))
-		a.assignOut(&out, res)
+		outChan <- out
+		close(outChan)
+		return
 	}
 
-	outChan <- out
+	var out Out
+	outi := 0
+	var typ jj.Type
+	for outi < len(input) {
+		typ, outi, _ = jj.ValidPayload(input, 0)
+		if typ == jj.JSON {
+			res := jj.GetBytes(input, a.keypath, jj.WithRawPath(a.rawKey))
+			a.assignOut(&out, res)
+			outChan <- out
+		}
+		input = input[outi:]
+	}
+
 	close(outChan)
 	return
 }
