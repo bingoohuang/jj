@@ -4,17 +4,17 @@ go 1.21
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
-	github.com/antonmedv/expr v1.15.5
-	github.com/bingoohuang/easyjson v0.0.0-20230518060058-6bd4764f7688
-	github.com/bingoohuang/gg v0.0.0-20231130030601-72ab0f5ec3c8
+	github.com/bingoohuang/easyjson v0.0.0-20240312031037-fad94e058bec
+	github.com/bingoohuang/gg v0.0.0-20240411023808-e8daaa707b8b
 	github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4
-	github.com/brianvoe/gofakeit/v6 v6.25.0
+	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/cristalhq/base64 v0.1.2
 	github.com/dustin/go-humanize v1.0.1
+	github.com/expr-lang/expr v1.16.7
 	github.com/mattn/go-isatty v0.0.20
 	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 )
 
@@ -26,7 +26,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/crypto v0.16.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

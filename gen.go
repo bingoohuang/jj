@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/bingoohuang/jj/randpoem"
 	"io"
 	"log"
 	"math/rand"
@@ -59,6 +60,9 @@ var DefaultSubstituteFns = map[string]any{
 	"file":         atFile,
 	"seq":          SubstitutionFnGen(SeqGenerator),
 	"gofakeit":     Gofakeit,
+	"唐诗":           func(_ string) any { return randpoem.RandPoetryTang() },
+	"宋词":           func(_ string) any { return randpoem.RandSongci() },
+	"诗经":           func(_ string) any { return randpoem.RandShijing() },
 }
 
 func Gofakeit(args string) (any, error) {
