@@ -47,6 +47,7 @@ options:
      -p         Parse inner JSON string as a JSON
      -o outfile Use modifyOutput file instead of stdout
      -f regex   List the key and values which regex matches its key
+	 -J         Pure javascript object which has name quoting leniently
      -k keypath JSON key path (like "name.last")
      -K keypath JSON key path as raw whole key
       keypath   Last argument for JSON key path`
@@ -60,7 +61,7 @@ type args struct {
 	raw, del, opt, keypathok, random      bool
 	ugly, notty, lines, rawKey, gen, expr bool
 	iterateArray, parseInnerJSONString    bool
-	countingItems                         bool
+	countingItems, quoteNameLeniently     bool
 
 	jsonMap map[string]any
 }
@@ -117,6 +118,8 @@ func parseArgs() args {
 						a.gen = true
 					case 'e':
 						a.expr = true
+					case 'J':
+						a.quoteNameLeniently = true
 					default:
 						goto P1
 					}
@@ -590,6 +593,10 @@ func (a args) modifyOutput(f *os.File, out Out) []byte {
 		} else {
 			out.Data = jj.Pretty(out.Data)
 		}
+	}
+
+	if a.quoteNameLeniently {
+		out.Data = jj.FormatQuoteNameLeniently(out.Data)
 	}
 
 	for len(out.Data) > 0 && out.Data[len(out.Data)-1] == '\n' {
