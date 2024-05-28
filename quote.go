@@ -29,6 +29,8 @@ func formatQuoteNameLeniently(input []byte, b *bytes.Buffer) {
 	})
 }
 
+// QuoteNameLeniently 对 name 如果需要的话，添加引号
+// 取自: https://github.com/hjson/hjson-go/blob/master/encode.go
 func QuoteNameLeniently(name string) string {
 	if len(name) == 0 {
 		return `""`
