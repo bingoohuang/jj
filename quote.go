@@ -8,18 +8,33 @@ import (
 )
 
 // FormatQuoteNameLeniently 将 JSON 中 key 的非必要双引号去除
-func FormatQuoteNameLeniently(input []byte) []byte {
+func FormatQuoteNameLeniently(input []byte, optFns ...QuoteOptionFunc) []byte {
 	var b bytes.Buffer
-
-	formatQuoteNameLeniently(input, &b)
-
+	formatQuoteNameLeniently(input, &b, optFns...)
 	return b.Bytes()
 }
 
-func formatQuoteNameLeniently(input []byte, b *bytes.Buffer) {
+type QuoteOption struct {
+	LenientValue bool
+}
+
+type QuoteOptionFunc func(o *QuoteOption)
+
+func WithLenientValue() QuoteOptionFunc {
+	return func(o *QuoteOption) {
+		o.LenientValue = true
+	}
+}
+
+func formatQuoteNameLeniently(input []byte, b *bytes.Buffer, optFns ...QuoteOptionFunc) {
+	var opt QuoteOption
+	for _, fn := range optFns {
+		fn(&opt)
+	}
+
 	StreamParse(input, func(start, end, info int) int {
 		s := input[start:end]
-		if IsToken(info, TokKey) {
+		if IsToken(info, TokKey) || opt.LenientValue && IsToken(info, TokString) {
 			k := s[1 : len(s)-1] // 去除两端双引号
 			b.Write([]byte(QuoteNameLeniently(string(k))))
 		} else {

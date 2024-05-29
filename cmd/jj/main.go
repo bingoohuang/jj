@@ -48,6 +48,7 @@ options:
      -o outfile Use modifyOutput file instead of stdout
      -f regex   List the key and values which regex matches its key
 	 -J         Pure javascript object which has name quoting leniently
+	 -JJ        Pure javascript object which has all string quoting leniently
      -k keypath JSON key path (like "name.last")
      -K keypath JSON key path as raw whole key
       keypath   Last argument for JSON key path`
@@ -61,7 +62,8 @@ type args struct {
 	raw, del, opt, keypathok, random      bool
 	ugly, notty, lines, rawKey, gen, expr bool
 	iterateArray, parseInnerJSONString    bool
-	countingItems, quoteNameLeniently     bool
+	countingItems                         bool
+	quoteNameLeniently                    int
 
 	jsonMap map[string]any
 }
@@ -119,7 +121,7 @@ func parseArgs() args {
 					case 'e':
 						a.expr = true
 					case 'J':
-						a.quoteNameLeniently = true
+						a.quoteNameLeniently++
 					default:
 						goto P1
 					}
@@ -595,8 +597,13 @@ func (a args) modifyOutput(f *os.File, out Out) []byte {
 		}
 	}
 
-	if a.quoteNameLeniently {
-		out.Data = jj.FormatQuoteNameLeniently(out.Data)
+	if a.quoteNameLeniently > 0 {
+		var opt []jj.QuoteOptionFunc
+		if a.quoteNameLeniently > 1 {
+			opt = append(opt, jj.WithLenientValue())
+		}
+
+		out.Data = jj.FormatQuoteNameLeniently(out.Data, opt...)
 	}
 
 	for len(out.Data) > 0 && out.Data[len(out.Data)-1] == '\n' {
