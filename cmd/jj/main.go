@@ -45,10 +45,10 @@ options:
      -g         Generate random JSON by input, use env N for more times, e.g. N=3 jj -gu name=@name
      -e         Eval keypath value as an expression
      -p         Parse inner JSON string as a JSON
-     -o outfile Use modifyOutput file instead of stdout
+     -o outfile Use output file instead of stdout
      -f regex   List the key and values which regex matches its key
-	 -J         Pure javascript object which has name quoting leniently
-	 -JJ        Pure javascript object which has all string quoting leniently
+     -J         Pure javascript object which has name quoting leniently
+     -JJ        Pure javascript object which has all string quoting leniently
      -k keypath JSON key path (like "name.last")
      -K keypath JSON key path as raw whole key
       keypath   Last argument for JSON key path`

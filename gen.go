@@ -48,6 +48,7 @@ var DefaultSubstituteFns = map[string]any{
 	"name":         func(_ string) any { return randomdata.SillyName() },
 	"ksuid":        func(_ string) any { v, _ := uid.NewRandom(); return v.String() },
 	"汉字":           randomChinese,
+	"emoji":        randomEmoji,
 	"姓名":           func(_ string) any { return chinaid.Name() },
 	"性别":           func(_ string) any { return chinaid.Sex() },
 	"地址":           func(_ string) any { return chinaid.Address() },
@@ -821,6 +822,26 @@ func RandomBase64(args string) any {
 	}
 
 	return encoding.EncodeToString(token)
+}
+
+func randomEmoji(args string) any {
+	if ranged, _, from, to, _, err := parseRandSize(args); err == nil {
+		if from < to || ranged {
+			return GenerateTimes(gofakeit.Emoji, from, to)
+		}
+		return GenerateTimes(gofakeit.Emoji, to, to)
+	}
+
+	return gofakeit.Emoji()
+}
+
+func GenerateTimes(f func() string, from, to int64) string {
+	ret := ""
+	end := int(randx.Int64Between(from, to))
+	for i := 0; i < end; i++ {
+		ret += f()
+	}
+	return ret
 }
 
 func randomChinese(args string) any {

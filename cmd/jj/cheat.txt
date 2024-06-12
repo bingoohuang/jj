@@ -74,3 +74,4 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 40. $ jj -guJ  a=@姓名 'b=@汉字(3)' c=@性别 d=@地址 => {a:"步二跱",b:"鶛殃氃",c:"男",d:"河南省开封市莉耭路4920号策赵小区2单元264室"}
 41. $ jj -RuJ => {currawang:["merryman"],Artinskian:"merryman",Acropora:["feodary","blockheadedness"],Leuckartiidae:false,exacerbation:false}
 42. $ jj -RuJJ => {slowly:{triricinolein:{myeloma:explicatively},entracte:true},theorize:67.30,Tyrr:null,crinet:{covenantee:true},pantograph:true}
+43. $ jj -gu e1='@emoji' e2='@emoji(3)' e3='@emoji(3,5) => {"e1":"🚉","e2":"🥞🏞️🚂","e3":"🦀"}
