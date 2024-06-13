@@ -9,7 +9,6 @@ require (
 	github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4
 	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/buger/jsonparser v1.1.1
-	github.com/cristalhq/base64 v0.1.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/expr-lang/expr v1.16.9
 	github.com/mattn/go-isatty v0.0.20
@@ -19,6 +18,7 @@ require (
 )
 
 require (
+	github.com/cristalhq/base64 v0.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

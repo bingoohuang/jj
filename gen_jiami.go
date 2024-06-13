@@ -1,13 +1,13 @@
 package jj
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
 	"sync"
 
 	"github.com/bingoohuang/jiami"
-	"github.com/cristalhq/base64"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
