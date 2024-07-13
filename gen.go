@@ -33,6 +33,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
+	"github.com/vishal-bihani/go-tsid"
 )
 
 var DefaultSubstituteFns = map[string]any{
@@ -48,23 +49,36 @@ var DefaultSubstituteFns = map[string]any{
 	"base64":       RandomBase64, // @base64(size=1000 std raw file=dir/f.png)
 	"name":         func(_ string) any { return randomdata.SillyName() },
 	"ksuid":        func(_ string) any { v, _ := uid.NewRandom(); return v.String() },
-	"汉字":           randomChinese,
-	"emoji":        randomEmoji,
-	"姓名":           func(_ string) any { return chinaid.Name() },
-	"性别":           func(_ string) any { return chinaid.Sex() },
-	"地址":           func(_ string) any { return chinaid.Address() },
-	"手机":           func(_ string) any { return chinaid.Mobile() },
-	"身份证":          func(_ string) any { return chinaid.ChinaID() },
-	"发证机关":         func(_ string) any { return chinaid.IssueOrg() },
-	"邮箱":           func(_ string) any { return chinaid.Email() },
-	"银行卡":          func(_ string) any { return chinaid.BankNo() },
-	"env":          func(name string) any { return os.Getenv(name) },
-	"file":         atFile,
-	"seq":          SubstitutionFnGen(SeqGenerator),
-	"gofakeit":     Gofakeit,
-	"唐诗":           func(_ string) any { return randpoem.RandPoetryTang() },
-	"宋词":           func(_ string) any { return randpoem.RandSongci() },
-	"诗经":           func(_ string) any { return randpoem.RandShijing() },
+	"tsid": func(format string) any {
+		id := tsid.Fast()
+		switch format {
+		case "number":
+			return id.ToNumber()
+		case "lower":
+			return id.ToLowerCase()
+		case "bytes":
+			return id.ToBytes()
+		default:
+			return id.ToString()
+		}
+	},
+	"汉字":       randomChinese,
+	"emoji":    randomEmoji,
+	"姓名":       func(_ string) any { return chinaid.Name() },
+	"性别":       func(_ string) any { return chinaid.Sex() },
+	"地址":       func(_ string) any { return chinaid.Address() },
+	"手机":       func(_ string) any { return chinaid.Mobile() },
+	"身份证":      func(_ string) any { return chinaid.ChinaID() },
+	"发证机关":     func(_ string) any { return chinaid.IssueOrg() },
+	"邮箱":       func(_ string) any { return chinaid.Email() },
+	"银行卡":      func(_ string) any { return chinaid.BankNo() },
+	"env":      func(name string) any { return os.Getenv(name) },
+	"file":     atFile,
+	"seq":      SubstitutionFnGen(SeqGenerator),
+	"gofakeit": Gofakeit,
+	"唐诗":       func(_ string) any { return randpoem.RandPoetryTang() },
+	"宋词":       func(_ string) any { return randpoem.RandSongci() },
+	"诗经":       func(_ string) any { return randpoem.RandShijing() },
 }
 
 func Gofakeit(args string) (any, error) {
@@ -331,7 +345,30 @@ func (r *GenRun) Eval(subs vars.Subs, quote bool) (s string, err error) {
 		return v, nil
 	}
 
-	return vars.ToString(ret), nil
+	return ToString(ret, quote), nil
+}
+
+func ToString(value any, quote bool) string {
+	var vvv string
+	switch vv := value.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", vv)
+	case float32, float64:
+		return fmt.Sprintf("%f", vv)
+	case bool:
+		return fmt.Sprintf("%t", vv)
+	case string:
+		return vv
+	case []byte:
+		vvv = base64.StdEncoding.EncodeToString(vv)
+	default:
+		vvv = fmt.Sprintf("%v", value)
+	}
+	if quote {
+		return strconv.Quote(vvv)
+	}
+
+	return vvv
 }
 
 func (r *GenRun) repeatStr(element string) {
