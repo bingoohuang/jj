@@ -11,6 +11,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/expr-lang/expr v1.16.9
+	github.com/google/uuid v1.6.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7
 	github.com/stretchr/testify v1.9.0
