@@ -616,9 +616,17 @@ func SeqGenerator(args string) func(args string) any {
 		}
 	}
 
-	if i, err := strconv.ParseUint(args, 10, 64); err == nil {
-		return func(args string) any {
-			return atomic.AddUint64(&i, 1) - 1
+	fields := strings.Split(args, ",")
+
+	if i, err := strconv.ParseUint(fields[0], 10, 64); err == nil {
+		if len(fields) == 1 {
+			return func(args string) any {
+				return atomic.AddUint64(&i, 1) - 1
+			}
+		} else {
+			return func(args string) any {
+				return fmt.Sprintf(fields[1], atomic.AddUint64(&i, 1)-1)
+			}
 		}
 	}
 

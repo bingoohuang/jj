@@ -75,3 +75,4 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 41. $ jj -RuJ => {currawang:["merryman"],Artinskian:"merryman",Acropora:["feodary","blockheadedness"],Leuckartiidae:false,exacerbation:false}
 42. $ jj -RuJJ => {slowly:{triricinolein:{myeloma:explicatively},entracte:true},theorize:67.30,Tyrr:null,crinet:{covenantee:true},pantograph:true}
 43. $ jj -gu e1='@emoji' e2='@emoji(3)' e3='@emoji(3,5) => {"e1":"🚉","e2":"🥞🏞️🚂","e3":"🦀"}
+44. $ N=3 jj -gu e='@seq(0,%05d)' => {"e":"00000"} {"e":"00001"} {"e":"00002"}
