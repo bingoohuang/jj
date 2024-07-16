@@ -40,9 +40,13 @@ var DefaultSubstituteFns = map[string]any{
 	"ip":           RandomIP,
 	"random":       Random,
 	"random_int":   RandomInt,
+	"rand_int":     RandomInt,
+	"rand_bool":    func(_ string) any { return randx.Bool() },
 	"random_bool":  func(_ string) any { return randx.Bool() },
 	"random_time":  RandomTime,
+	"rand_time":    RandomTime,
 	"random_image": RandomImage, // @random_image(format=jpg size=640x320)
+	"rand_image":   RandomImage, // @random_image(format=jpg size=640x320)
 	"objectId":     func(string) any { return NewObjectID().Hex() },
 	"regex":        Regex,
 	"uuid":         func(version string) any { return NewUUID(version).String() },
@@ -504,7 +508,7 @@ func parseRandSize(s string) (ranged bool, paddingSize int, from, to, time int64
 	p := strings.Index(s, "-")
 	times := int64(0)
 	if p < 0 {
-		if strings.HasPrefix(s, "0") {
+		if s != "0" && strings.HasPrefix(s, "0") {
 			paddingSize = len(s)
 		}
 		if times, err = strconv.ParseInt(strings.TrimLeft(s, "0"), 10, 64); err != nil {
@@ -515,11 +519,12 @@ func parseRandSize(s string) (ranged bool, paddingSize int, from, to, time int64
 
 	ranged = true
 
-	if strings.HasPrefix(s[:p], "0") {
-		paddingSize = len(s[:p])
+	s1 := s[:p]
+	fromExpr := s1
+	if s1 != "0" && strings.HasPrefix(s1, "0") {
+		paddingSize = len(s1)
+		fromExpr = strings.TrimLeft(s1, "0")
 	}
-
-	fromExpr := strings.TrimLeft(s[:p], "0")
 
 	from, err1 := strconv.ParseInt(fromExpr, 10, 64)
 	if err1 != nil {
