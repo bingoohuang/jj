@@ -17,6 +17,7 @@ import (
 
 	"github.com/bingoohuang/gg/pkg/ss"
 	"github.com/bingoohuang/jj"
+	_ "github.com/bingoohuang/jj/randpoem"
 	"github.com/expr-lang/expr"
 	"github.com/mattn/go-isatty"
 )

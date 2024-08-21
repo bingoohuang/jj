@@ -78,3 +78,4 @@ The `-O` tells jj that the `name.first` likely exists so try a fasttrack operati
 44. $ jj -gu v4=@uuid v6='@uuid(v6)' v7='@uuid(v7)' v1='@uuid(v1)' # UUID v7 - which produces time-sorted values.
 45. $ jj -gu id='@tsid', idNumber='@tsid(number)' idLower='@tsid(lower)' idBytes='@tsid(bytes)' => {"id":"05M3YECWC0001,","idBytes":"AtB+czjAAAI=","idLower":"05m3yecwc0003","idNumber":202801016570118148}
 46. $ N=3 jj -gu e='@seq(0,%05d)' => {"e":"00000"} {"e":"00001"} {"e":"00002"}
+47. $ jj -guJ  a=@唐诗, b=@宋词 c=@诗经

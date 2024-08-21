@@ -28,7 +28,6 @@ import (
 	"github.com/bingoohuang/gg/pkg/timex"
 	"github.com/bingoohuang/gg/pkg/uid"
 	"github.com/bingoohuang/gg/pkg/vars"
-	"github.com/bingoohuang/jj/randpoem"
 	"github.com/bingoohuang/jj/reggen"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dustin/go-humanize"
@@ -80,9 +79,10 @@ var DefaultSubstituteFns = map[string]any{
 	"file":     atFile,
 	"seq":      SubstitutionFnGen(SeqGenerator),
 	"gofakeit": Gofakeit,
-	"唐诗":       func(_ string) any { return randpoem.RandPoetryTang() },
-	"宋词":       func(_ string) any { return randpoem.RandSongci() },
-	"诗经":       func(_ string) any { return randpoem.RandShijing() },
+}
+
+func RegisterSubstituteFn(name string, f func(_ string) any) {
+	DefaultSubstituteFns[name] = f
 }
 
 func Gofakeit(args string) (any, error) {
