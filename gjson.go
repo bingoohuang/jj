@@ -1895,6 +1895,10 @@ func AppendJSONString(dst []byte, s string) []byte {
 				dst = append(dst, 'r')
 			case '\t':
 				dst = append(dst, 't')
+			case '\b':
+				dst = append(dst, 'b')
+			case '\f':
+				dst = append(dst, 'f')
 			default:
 				dst = append(dst, 'u')
 				dst = appendHex16(dst, uint16(s[i]))

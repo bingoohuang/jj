@@ -16,7 +16,7 @@ func RandSongci() string     { return SliceRandItem(SongciLines) }
 func RandShijing() string    { return SliceRandItem(ShijingLines) }
 
 func SliceRandItem(data []string) string {
-	return data[ss.RandIntn(len(data))]
+	return data[ss.Rand().Intn(len(data))]
 }
 
 var (

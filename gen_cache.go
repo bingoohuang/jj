@@ -1,18 +1,19 @@
 package jj
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/bingoohuang/gg/pkg/vars"
+	"github.com/bingoohuang/ngg/ss"
 )
 
 func GenWithCache(s string) (string, error) {
-	ret, err := vars.ParseExpr(s).Eval(NewCachingSubstituter())
+	ret, err := ss.ParseExpr(s).Eval(NewCachingSubstituter())
 	if err != nil {
 		return "", err
 	}
-	return vars.ToString(ret), nil
+	return fmt.Sprintf("%v", ret), nil
 }
 
 func NewCachingSubstituter() Substitute {

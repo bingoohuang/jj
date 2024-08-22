@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/Pallinder/go-randomdata"
-	"github.com/bingoohuang/gg/pkg/vars"
 	"github.com/bingoohuang/jj/reggen"
 	"github.com/bingoohuang/ngg/ss"
 	"github.com/bingoohuang/ngg/tick"
@@ -36,8 +35,8 @@ var DefaultSubstituteFns = map[string]any{
 	"random":       Random,
 	"random_int":   RandomInt,
 	"rand_int":     RandomInt,
-	"rand_bool":    func(_ string) any { return ss.RandBool() },
-	"random_bool":  func(_ string) any { return ss.RandBool() },
+	"rand_bool":    func(_ string) any { return ss.Rand().Bool() },
+	"random_bool":  func(_ string) any { return ss.Rand().Bool() },
 	"random_time":  RandomTime,
 	"rand_time":    RandomTime,
 	"random_image": RandomImage, // @random_image(format=jpg size=640x320)
@@ -63,14 +62,14 @@ var DefaultSubstituteFns = map[string]any{
 	},
 	"汉字":       randomChinese,
 	"emoji":    randomEmoji,
-	"姓名":       func(_ string) any { return ss.RandChineseName() },
-	"性别":       func(_ string) any { return ss.RandSex() },
-	"地址":       func(_ string) any { return ss.RandAddress() },
-	"手机":       func(_ string) any { return ss.RandMobile() },
-	"身份证":      func(_ string) any { return ss.RandChinaID() },
-	"发证机关":     func(_ string) any { return ss.RandIssueOrg() },
-	"邮箱":       func(_ string) any { return ss.RandEmail() },
-	"银行卡":      func(_ string) any { return ss.RandBankNo() },
+	"姓名":       func(_ string) any { return ss.Rand().ChineseName() },
+	"性别":       func(_ string) any { return ss.Rand().Sex() },
+	"地址":       func(_ string) any { return ss.Rand().Address() },
+	"手机":       func(_ string) any { return ss.Rand().Mobile() },
+	"身份证":      func(_ string) any { return ss.Rand().ChinaID() },
+	"发证机关":     func(_ string) any { return ss.Rand().IssueOrg() },
+	"邮箱":       func(_ string) any { return ss.Rand().Email() },
+	"银行卡":      func(_ string) any { return ss.Rand().BankNo() },
 	"env":      func(name string) any { return os.Getenv(name) },
 	"file":     atFile,
 	"seq":      SubstitutionFnGen(SeqGenerator),
@@ -143,7 +142,7 @@ func RandomImage(conf string) any {
 	c := ss.RandImgConfig{
 		Width:      width,
 		Height:     height,
-		RandomText: fmt.Sprintf("%d", ss.RandInt()),
+		RandomText: fmt.Sprintf("%d", ss.Rand().Int()),
 		FastMode:   false,
 		PixelSize:  40,
 	}
@@ -202,7 +201,7 @@ func NewSubstituter(m map[string]any) *Substituter {
 func (r *Substituter) Register(fn string, f any) { r.raw[fn] = f }
 
 type Substitute interface {
-	vars.Valuer
+	ss.Valuer
 	Register(fn string, f any)
 }
 
@@ -256,7 +255,7 @@ func (r *GenRun) walk(start, end, info int) int {
 		r.Opens--
 		if r.BreakRepeater {
 			r.BreakRepeater = false
-			return Ifi(r.Opens > 0, 1, 0)
+			return ss.If(r.Opens > 0, 1, 0)
 		}
 	case IsToken(info, TokString):
 		s := element[1 : len(element)-1]
@@ -274,7 +273,7 @@ func (r *GenRun) walk(start, end, info int) int {
 
 			fallthrough
 		case IsToken(info, TokValue):
-			if subs := vars.ParseExpr(s); subs.CountVars() > 0 {
+			if subs := ss.ParseExpr(s); subs.CountVars() > 0 {
 				if r.repeater == nil {
 					ret, err := r.Eval(subs, true)
 					if err != nil {
@@ -329,10 +328,10 @@ func (r *GenRun) walk(start, end, info int) int {
 	if r.repeater == nil || !r.repeaterWait {
 		r.Out += element
 	}
-	return Ifi(r.Opens > 0, 1, 0)
+	return ss.If(r.Opens > 0, 1, 0)
 }
 
-func (r *GenRun) Eval(subs vars.Subs, quote bool) (s string, err error) {
+func (r *GenRun) Eval(subs ss.Subs, quote bool) (s string, err error) {
 	ret, err := subs.Eval(r.Substitute)
 	if err != nil {
 		return "", err
@@ -496,7 +495,7 @@ func (r *GenContext) parseRepeat(s string) *Repeater {
 		return nil
 	}
 
-	n := Ifi(r.MockTimes > 0, r.MockTimes, int(times))
+	n := ss.If(r.MockTimes > 0, r.MockTimes, int(times))
 	return &Repeater{Key: key, Times: n}
 }
 
@@ -531,7 +530,7 @@ func parseRandSize(s string) (ranged bool, paddingSize int, from, to, time int64
 	if err2 != nil {
 		return ranged, 0, 0, 0, 0, err2
 	}
-	times = ss.RandInt64Between(from, to)
+	times = ss.Rand().Int64Between(from, to)
 	return ranged, paddingSize, from, to, times, nil
 }
 
@@ -563,13 +562,6 @@ func (r *GenContext) Process(src string) (*GenRun, int, error) {
 	return gr, ret, gr.Err
 }
 
-func Ifi(b bool, x, y int) int {
-	if b {
-		return x
-	}
-	return y
-}
-
 func ParseParams(params string) []string {
 	params = strings.TrimSpace(params)
 	sep := ","
@@ -580,24 +572,11 @@ func ParseParams(params string) []string {
 		}
 	}
 
-	return SplitTrim(params, sep)
-}
-
-func SplitTrim(s, sep string) []string {
-	pp := strings.Split(s, sep)
-	p2 := make([]string, 0, len(pp))
-	for _, p := range pp {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			p2 = append(p2, p)
-		}
-	}
-
-	return p2
+	return ss.Split(params, sep)
 }
 
 func RandomTime(args string) any {
-	t := ss.RandTime()
+	t := ss.Rand().Time()
 	if args == "" {
 		return t.Format(time.RFC3339Nano)
 	}
@@ -627,7 +606,7 @@ func RandomTime(args string) any {
 
 		fromUnix := from.Unix()
 		toUnix := to.Unix()
-		r := ss.RandInt64Between(fromUnix, toUnix)
+		r := ss.Rand().Int64Between(fromUnix, toUnix)
 		return time.Unix(r, 0).Format(layout)
 	}
 
@@ -713,15 +692,15 @@ func RandomIP(args string) any {
 
 func RandomInt(args string) any {
 	if args == "" {
-		return ss.RandInt64()
+		return ss.Rand().Int64()
 	}
 
 	if ranged, paddingSize, from, to, _, err := parseRandSize(args); err == nil {
 		var n int64
 		if from < to || ranged {
-			n = ss.RandInt64Between(from, to)
+			n = ss.Rand().Int64Between(from, to)
 		} else {
-			n = ss.RandInt64n(to)
+			n = ss.Rand().Int64n(to)
 		}
 
 		if paddingSize <= 0 {
@@ -737,7 +716,7 @@ func RandomInt(args string) any {
 		v := strings.TrimSpace(el)
 		if v == "" {
 			continue
-		} else if !ss.RandBool() {
+		} else if !ss.Rand().Bool() {
 			continue
 		}
 
@@ -751,7 +730,7 @@ func RandomInt(args string) any {
 		return vv
 	}
 
-	return ss.RandInt64()
+	return ss.Rand().Int64()
 }
 
 var argRegexp = regexp.MustCompile(`([^\s=]+)\s*(?:=\s*(\S+))?`)
@@ -884,7 +863,7 @@ func randomEmoji(args string) any {
 
 func GenerateTimes(f func() string, from, to int64) string {
 	ret := ""
-	end := int(ss.RandInt64Between(from, to))
+	end := int(ss.Rand().Int64Between(from, to))
 	for i := 0; i < end; i++ {
 		ret += f()
 	}
@@ -894,21 +873,21 @@ func GenerateTimes(f func() string, from, to int64) string {
 func randomChinese(args string) any {
 	if ranged, _, from, to, _, err := parseRandSize(args); err == nil {
 		if from < to || ranged {
-			return ss.RandChinese(int(from), int(to))
+			return ss.Rand().Chinese(int(from), int(to))
 		}
 
-		return ss.RandChinese(int(to), int(to))
+		return ss.Rand().Chinese(int(to), int(to))
 	}
 
-	return ss.RandChinese(2, 3)
+	return ss.Rand().Chinese(2, 3)
 }
 
 func Random(args string) any {
 	if args == "" {
-		return ss.RandString(10)
+		return ss.Rand().String(10)
 	}
 	if i, err := strconv.Atoi(args); err == nil {
-		return ss.RandString(i)
+		return ss.Rand().String(i)
 	}
 
 	if size, err := unit.ParseBytes(args); err == nil {
@@ -923,7 +902,7 @@ func Random(args string) any {
 			continue
 		}
 
-		if ss.RandBool() {
+		if ss.Rand().Bool() {
 			return el
 		}
 	}
@@ -932,7 +911,7 @@ func Random(args string) any {
 		return lastEl
 	}
 
-	return ss.RandString(10)
+	return ss.Rand().String(10)
 }
 
 func Regex(args string) any {
