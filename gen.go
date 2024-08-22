@@ -29,10 +29,10 @@ import (
 	"github.com/bingoohuang/gg/pkg/uid"
 	"github.com/bingoohuang/gg/pkg/vars"
 	"github.com/bingoohuang/jj/reggen"
+	"github.com/bingoohuang/ngg/tsid"
+	"github.com/bingoohuang/ngg/unit"
 	"github.com/brianvoe/gofakeit/v6"
-	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
-	"github.com/vishal-bihani/go-tsid"
 )
 
 var DefaultSubstituteFns = map[string]any{
@@ -58,7 +58,7 @@ var DefaultSubstituteFns = map[string]any{
 		case "number":
 			return id.ToNumber()
 		case "lower":
-			return id.ToLowerCase()
+			return id.ToLower()
 		case "bytes":
 			return id.ToBytes()
 		default:
@@ -854,7 +854,7 @@ func RandomBase64(args string) any {
 		} else {
 			log.Printf("read file %s failed: %v", arg.File, r.Err)
 		}
-	} else if size, _ := humanize.ParseBytes(arg.Size); size > 0 {
+	} else if size, _ := unit.ParseBytes(arg.Size); size > 0 {
 		token = make([]byte, size)
 		rand.New(rand.NewSource(time.Now().UnixNano())).Read(token)
 	}
@@ -915,7 +915,7 @@ func Random(args string) any {
 		return randx.String(i)
 	}
 
-	if size, err := humanize.ParseBytes(args); err == nil {
+	if size, err := unit.ParseBytes(args); err == nil {
 		b := make([]byte, size*3/4)
 		n, _ := crand.Read(b)
 		return base64.RawURLEncoding.EncodeToString(b[:n])

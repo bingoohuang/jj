@@ -7,15 +7,15 @@ require (
 	github.com/bingoohuang/easyjson v0.0.0-20240312031037-fad94e058bec
 	github.com/bingoohuang/gg v0.0.0-20240820055717-df461be84380
 	github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4
+	github.com/bingoohuang/ngg/tsid v0.0.0-20240822015027-a65fe7212516
+	github.com/bingoohuang/ngg/unit v0.0.0-20240821144922-040c7cdbdc9d
 	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/buger/jsonparser v1.1.1
-	github.com/dustin/go-humanize v1.0.1
 	github.com/expr-lang/expr v1.16.9
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7
 	github.com/stretchr/testify v1.9.0
-	github.com/vishal-bihani/go-tsid v1.0.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 )
 

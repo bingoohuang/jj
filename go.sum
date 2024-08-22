@@ -6,6 +6,10 @@ github.com/bingoohuang/gg v0.0.0-20240820055717-df461be84380 h1:tSdCjH1XuOzEEkOB
 github.com/bingoohuang/gg v0.0.0-20240820055717-df461be84380/go.mod h1:Je4iQAMIN0SBAvRtXFkqp0f5nGvaROyBFzUM1If4498=
 github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4 h1:+VmCTioMLui7PJgGD0AGOq44ls7GVYqxqv5NY1nncvY=
 github.com/bingoohuang/jiami v0.0.0-20221123002830-d9d1f5f029b4/go.mod h1:orsb36bWkIn1YzTj9vxKi61P/RJj4eopmi8dyrOFeEY=
+github.com/bingoohuang/ngg/tsid v0.0.0-20240822015027-a65fe7212516 h1:9B2yD7jeM0cwXDjOdWU812Rg1gomN2WUlsKrMNMq1/0=
+github.com/bingoohuang/ngg/tsid v0.0.0-20240822015027-a65fe7212516/go.mod h1:3rWpFvYXe2TVdYDHXGYq6kZV6tMiz5ZHwaTbu22Y2u4=
+github.com/bingoohuang/ngg/unit v0.0.0-20240821144922-040c7cdbdc9d h1:0FvUQyWLQFxts88piKmpWmEa4zVKYl44w9/dZJUpIYE=
+github.com/bingoohuang/ngg/unit v0.0.0-20240821144922-040c7cdbdc9d/go.mod h1:p6UKurVIaM5kz/lhpFYKT8ejT5iAQz90qPbXlVtqgHQ=
 github.com/brianvoe/gofakeit/v6 v6.28.0 h1:Xib46XXuQfmlLS2EXRuJpqcw8St6qSZz75OUo0tgAW4=
 github.com/brianvoe/gofakeit/v6 v6.28.0/go.mod h1:Xj58BMSnFqcn/fAQeSK+/PLtC5kSb7FJIq4JyGa8vEs=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
@@ -14,8 +18,6 @@ github.com/cristalhq/base64 v0.1.2 h1:edsefYyYDiac7Ytdh2xdaiiSSJzcI2f0yIkdGEf1qY
 github.com/cristalhq/base64 v0.1.2/go.mod h1:sy4+2Hale2KbtSqkzpdMeYTP/IrB+HCvxVHWsh2VSYk=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
-github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/expr-lang/expr v1.16.9 h1:WUAzmR0JNI9JCiF0/ewwHB1gmcGw5wW7nWt8gc6PpCI=
 github.com/expr-lang/expr v1.16.9/go.mod h1:8/vRC7+7HBzESEqt5kKpYXxrxkr31SaO8r40VO/1IT4=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
@@ -36,8 +38,6 @@ github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7 h1:xoIK0ctDddBMnc74
 github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7/go.mod h1:YARuvh7BUWHNhzDq2OM5tzR2RiCcN2D7sapiKyCel/M=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/vishal-bihani/go-tsid v1.0.4 h1:jUkZW7WJrnzdsKF5sGga3AII0A/HMlMlcXvC6FmWhTU=
-github.com/vishal-bihani/go-tsid v1.0.4/go.mod h1:gmaZPsZmYPNS5mKGD/+fVmj0f2SXEqqC1AHjs1r65qI=
 github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IUPn0Bjt8=
 github.com/vmihailenco/msgpack/v5 v5.4.1/go.mod h1:GaZTsDaehaPpQVyxrf5mtQlH+pc21PIudVV/E3rRQok=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
