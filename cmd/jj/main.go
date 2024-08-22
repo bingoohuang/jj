@@ -15,9 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bingoohuang/gg/pkg/ss"
 	"github.com/bingoohuang/jj"
 	_ "github.com/bingoohuang/jj/randpoem"
+	"github.com/bingoohuang/ngg/ss"
+	"github.com/bingoohuang/ngg/ver"
 	"github.com/expr-lang/expr"
 	"github.com/mattn/go-isatty"
 )
@@ -32,6 +33,7 @@ eg.: jj keypath                      read value from stdin
      jj -v value -o outfile keypath  edit value and write to outfile
 options:
      -v value   Edit JSON key path value
+     -V         Print version and exit
      -c         Print cheatsheet
      -C         Print items counting in colored output
      -u         Make json ugly, keypath is optional
@@ -96,7 +98,11 @@ func parseArgs() args {
 				for j := 1; j < len(os.Args[i]); j++ {
 					switch os.Args[i][j] {
 					case 'c':
-						printCheatsAndExit()
+						fmt.Println(cheatText)
+						os.Exit(0)
+					case 'V':
+						fmt.Printf("%s version: %s\n", os.Args[0], ver.Version())
+						os.Exit(0)
 					case 'u':
 						a.ugly = true
 					case 'r':
@@ -212,11 +218,6 @@ func init() {
 		num := fmt.Sprintf("%d. ", i)
 		cheatText = strings.Replace(cheatText, num, Red+num+Reset, 1)
 	}
-}
-
-func printCheatsAndExit() {
-	fmt.Println(cheatText)
-	os.Exit(0)
 }
 
 func main() {
@@ -387,12 +388,12 @@ func (a args) randomJSON(outChan chan Out) {
 	if j := os.Getenv("N"); j != "" {
 		if strings.Contains(j, ",") {
 			k := strings.IndexByte(j, ',')
-			if times = ss.ParseInt(j[:k]); times < 1 {
+			if times, _ = ss.Parse[int](j[:k]); times < 1 {
 				times = 1
 			}
 			j = j[k+1:]
 		}
-		if k := ss.ParseInt(j); k > 0 {
+		if k, _ := ss.Parse[int](j); k > 0 {
 			randOptions.Depth = k
 		}
 	}
@@ -519,7 +520,7 @@ func GetEnvInt(name string, defaultValue int) int {
 		return defaultValue
 	}
 
-	if ev, err := ss.ParseIntE(s); err == nil {
+	if ev, err := ss.Parse[int](s); err == nil {
 		return ev
 	}
 

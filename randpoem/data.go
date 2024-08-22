@@ -5,9 +5,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	_ "embed"
-	"github.com/bingoohuang/gg/pkg/randx"
 	"io"
 	"log"
+
+	"github.com/bingoohuang/ngg/ss"
 )
 
 func RandPoetryTang() string { return SliceRandItem(PoetryTangsLines) }
@@ -15,7 +16,7 @@ func RandSongci() string     { return SliceRandItem(SongciLines) }
 func RandShijing() string    { return SliceRandItem(ShijingLines) }
 
 func SliceRandItem(data []string) string {
-	return data[randx.IntN(len(data))]
+	return data[ss.RandIntn(len(data))]
 }
 
 var (

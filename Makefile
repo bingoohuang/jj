@@ -18,11 +18,11 @@ buildTimeCompact := $(shell date +%Y%m%d%H%M%S)
 # https://git-scm.com/docs/git-rev-list#Documentation/git-rev-list.txt-emaIem
 # e.g. ffd23d3@2022-04-06T18:07:14+08:00
 gitCommit := $(shell [ -f git.commit ] && cat git.commit || git log --format=format:'%h@%aI' -1)
-gitBranch := $(shell [ -f git.branch ] && cat git.branch || git rev-parse --abbrev-ref HEAD)
+gitBranch := $(shell [ -f git.branch ] && cat git.branch || git reflog | head -1)
 gitInfo = $(gitBranch)-$(gitCommit)
 #gitCommit := $(shell git rev-list -1 HEAD)
 # https://stackoverflow.com/a/47510909
-pkg := github.com/bingoohuang/gg/pkg/v
+pkg := github.com/bingoohuang/ngg/ver
 hostname := $(shell hostname)
 hostip := $(shell hostname -I 2>/dev/null || ifconfig -a | grep inet | grep -v inet6 | grep -v 127.0.0.1 | awk '{print $$2}')
 BuildCI := $(if $(BUILD_TAG),$(BUILD_TAG),Unknown)
@@ -133,10 +133,9 @@ install: init
 	${LS_BIN}
 
 linux: init
-	GOOS=linux GOARCH=amd64 ${goinstall}
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC="zig cc -target x86_64-linux-musl" CXX="zig c++ -target x86_64-linux-musl" ${goinstall}
 	ls -lh  ${gobin}/linux_amd64/${app}*
-linux-upx: init
-	GOOS=linux GOARCH=amd64 ${goinstall}
+linux-upx: linux
 	upx --best --lzma ${gobin}/linux_amd64/${app}*
 	ls -lh  ${gobin}/linux_amd64/${app}*
 windows: init

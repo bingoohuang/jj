@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/bingoohuang/easyjson/jlexer"
-	"github.com/bingoohuang/gg/pkg/jsoni"
 	"github.com/buger/jsonparser"
+	jsoni "github.com/json-iterator/go"
 	fflib "github.com/pquerna/ffjson/fflib/v1"
 )
 

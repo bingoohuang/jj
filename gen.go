@@ -20,19 +20,15 @@ import (
 	"time"
 
 	"github.com/Pallinder/go-randomdata"
-	"github.com/bingoohuang/gg/pkg/chinaid"
-	"github.com/bingoohuang/gg/pkg/osx"
-	"github.com/bingoohuang/gg/pkg/osx/env"
-	"github.com/bingoohuang/gg/pkg/randx"
-	"github.com/bingoohuang/gg/pkg/ss"
-	"github.com/bingoohuang/gg/pkg/timex"
-	"github.com/bingoohuang/gg/pkg/uid"
 	"github.com/bingoohuang/gg/pkg/vars"
 	"github.com/bingoohuang/jj/reggen"
+	"github.com/bingoohuang/ngg/ss"
+	"github.com/bingoohuang/ngg/tick"
 	"github.com/bingoohuang/ngg/tsid"
 	"github.com/bingoohuang/ngg/unit"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
+	"github.com/segmentio/ksuid"
 )
 
 var DefaultSubstituteFns = map[string]any{
@@ -40,8 +36,8 @@ var DefaultSubstituteFns = map[string]any{
 	"random":       Random,
 	"random_int":   RandomInt,
 	"rand_int":     RandomInt,
-	"rand_bool":    func(_ string) any { return randx.Bool() },
-	"random_bool":  func(_ string) any { return randx.Bool() },
+	"rand_bool":    func(_ string) any { return ss.RandBool() },
+	"random_bool":  func(_ string) any { return ss.RandBool() },
 	"random_time":  RandomTime,
 	"rand_time":    RandomTime,
 	"random_image": RandomImage, // @random_image(format=jpg size=640x320)
@@ -51,7 +47,7 @@ var DefaultSubstituteFns = map[string]any{
 	"uuid":         func(version string) any { return NewUUID(version).String() },
 	"base64":       RandomBase64, // @base64(size=1000 std raw file=dir/f.png)
 	"name":         func(_ string) any { return randomdata.SillyName() },
-	"ksuid":        func(_ string) any { v, _ := uid.NewRandom(); return v.String() },
+	"ksuid":        func(_ string) any { v, _ := ksuid.NewRandom(); return v.String() },
 	"tsid": func(format string) any {
 		id := tsid.Fast()
 		switch format {
@@ -67,14 +63,14 @@ var DefaultSubstituteFns = map[string]any{
 	},
 	"汉字":       randomChinese,
 	"emoji":    randomEmoji,
-	"姓名":       func(_ string) any { return chinaid.Name() },
-	"性别":       func(_ string) any { return chinaid.Sex() },
-	"地址":       func(_ string) any { return chinaid.Address() },
-	"手机":       func(_ string) any { return chinaid.Mobile() },
-	"身份证":      func(_ string) any { return chinaid.ChinaID() },
-	"发证机关":     func(_ string) any { return chinaid.IssueOrg() },
-	"邮箱":       func(_ string) any { return chinaid.Email() },
-	"银行卡":      func(_ string) any { return chinaid.BankNo() },
+	"姓名":       func(_ string) any { return ss.RandChineseName() },
+	"性别":       func(_ string) any { return ss.RandSex() },
+	"地址":       func(_ string) any { return ss.RandAddress() },
+	"手机":       func(_ string) any { return ss.RandMobile() },
+	"身份证":      func(_ string) any { return ss.RandChinaID() },
+	"发证机关":     func(_ string) any { return ss.RandIssueOrg() },
+	"邮箱":       func(_ string) any { return ss.RandEmail() },
+	"银行卡":      func(_ string) any { return ss.RandBankNo() },
 	"env":      func(name string) any { return os.Getenv(name) },
 	"file":     atFile,
 	"seq":      SubstitutionFnGen(SeqGenerator),
@@ -144,10 +140,10 @@ func RandomImage(conf string) any {
 	}
 
 	width, height := parseImageSize(arg.Size)
-	c := randx.ImgConfig{
+	c := ss.RandImgConfig{
 		Width:      width,
 		Height:     height,
-		RandomText: fmt.Sprintf("%d", randx.Int()),
+		RandomText: fmt.Sprintf("%d", ss.RandInt()),
 		FastMode:   false,
 		PixelSize:  40,
 	}
@@ -179,10 +175,10 @@ func parseImageSize(val string) (width, height int) {
 		val = strings.ToLower(val)
 		parts := strings.SplitN(val, "x", 2)
 		if len(parts) == 2 {
-			if v := ss.ParseInt(parts[0]); v > 0 {
+			if v, _ := ss.Parse[int](parts[0]); v > 0 {
 				width = v
 			}
-			if v := ss.ParseInt(parts[1]); v > 0 {
+			if v, _ := ss.Parse[int](parts[1]); v > 0 {
 				height = v
 			}
 		}
@@ -535,7 +531,7 @@ func parseRandSize(s string) (ranged bool, paddingSize int, from, to, time int64
 	if err2 != nil {
 		return ranged, 0, 0, 0, 0, err2
 	}
-	times = randx.Int64Between(from, to)
+	times = ss.RandInt64Between(from, to)
 	return ranged, paddingSize, from, to, times, nil
 }
 
@@ -601,7 +597,7 @@ func SplitTrim(s, sep string) []string {
 }
 
 func RandomTime(args string) any {
-	t := randx.Time()
+	t := ss.RandTime()
 	if args == "" {
 		return t.Format(time.RFC3339Nano)
 	}
@@ -612,7 +608,7 @@ func RandomTime(args string) any {
 		pp = v
 	}
 
-	layout := timex.ConvertFormat(pp[0])
+	layout := tick.ToLayout(pp[0])
 	if len(pp) == 1 {
 		return t.Format(layout)
 	}
@@ -631,7 +627,7 @@ func RandomTime(args string) any {
 
 		fromUnix := from.Unix()
 		toUnix := to.Unix()
-		r := randx.Int64Between(fromUnix, toUnix)
+		r := ss.RandInt64Between(fromUnix, toUnix)
 		return time.Unix(r, 0).Format(layout)
 	}
 
@@ -650,7 +646,7 @@ func filter(pp []string, s string) (filtered []string, found bool) {
 	return
 }
 
-var SeqStart = uint64(env.Int("SEQ", 0))
+var SeqStart = ss.Pick1(ss.Getenv[uint64]("SEQ", 0))
 
 func SeqGenerator(args string) func(args string) any {
 	if args == "" {
@@ -717,15 +713,15 @@ func RandomIP(args string) any {
 
 func RandomInt(args string) any {
 	if args == "" {
-		return randx.Int64()
+		return ss.RandInt64()
 	}
 
 	if ranged, paddingSize, from, to, _, err := parseRandSize(args); err == nil {
 		var n int64
 		if from < to || ranged {
-			n = randx.Int64Between(from, to)
+			n = ss.RandInt64Between(from, to)
 		} else {
-			n = randx.Int64N(to)
+			n = ss.RandInt64n(to)
 		}
 
 		if paddingSize <= 0 {
@@ -741,7 +737,7 @@ func RandomInt(args string) any {
 		v := strings.TrimSpace(el)
 		if v == "" {
 			continue
-		} else if !randx.Bool() {
+		} else if !ss.RandBool() {
 			continue
 		}
 
@@ -755,7 +751,7 @@ func RandomInt(args string) any {
 		return vv
 	}
 
-	return randx.Int64()
+	return ss.RandInt64()
 }
 
 var argRegexp = regexp.MustCompile(`([^\s=]+)\s*(?:=\s*(\S+))?`)
@@ -849,10 +845,10 @@ func RandomBase64(args string) any {
 
 	var token []byte
 	if arg.File != "" {
-		if r := osx.ReadFile(arg.File); r.OK() {
-			token = r.Data
+		if r, err := os.ReadFile(arg.File); err == nil {
+			token = r
 		} else {
-			log.Printf("read file %s failed: %v", arg.File, r.Err)
+			log.Printf("read file %s failed: %v", arg.File, err)
 		}
 	} else if size, _ := unit.ParseBytes(arg.Size); size > 0 {
 		token = make([]byte, size)
@@ -888,7 +884,7 @@ func randomEmoji(args string) any {
 
 func GenerateTimes(f func() string, from, to int64) string {
 	ret := ""
-	end := int(randx.Int64Between(from, to))
+	end := int(ss.RandInt64Between(from, to))
 	for i := 0; i < end; i++ {
 		ret += f()
 	}
@@ -898,21 +894,21 @@ func GenerateTimes(f func() string, from, to int64) string {
 func randomChinese(args string) any {
 	if ranged, _, from, to, _, err := parseRandSize(args); err == nil {
 		if from < to || ranged {
-			return chinaid.RandChinese(int(from), int(to))
+			return ss.RandChinese(int(from), int(to))
 		}
 
-		return chinaid.RandChinese(int(to), int(to))
+		return ss.RandChinese(int(to), int(to))
 	}
 
-	return chinaid.RandChinese(2, 3)
+	return ss.RandChinese(2, 3)
 }
 
 func Random(args string) any {
 	if args == "" {
-		return randx.String(10)
+		return ss.RandString(10)
 	}
 	if i, err := strconv.Atoi(args); err == nil {
-		return randx.String(i)
+		return ss.RandString(i)
 	}
 
 	if size, err := unit.ParseBytes(args); err == nil {
@@ -927,7 +923,7 @@ func Random(args string) any {
 			continue
 		}
 
-		if randx.Bool() {
+		if ss.RandBool() {
 			return el
 		}
 	}
@@ -936,7 +932,7 @@ func Random(args string) any {
 		return lastEl
 	}
 
-	return randx.String(10)
+	return ss.RandString(10)
 }
 
 func Regex(args string) any {
