@@ -24,7 +24,6 @@ import (
 	"github.com/bingoohuang/ngg/ss"
 	"github.com/bingoohuang/ngg/tick"
 	"github.com/bingoohuang/ngg/tsid"
-	"github.com/bingoohuang/ngg/unit"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
 	"github.com/segmentio/ksuid"
@@ -829,7 +828,7 @@ func RandomBase64(args string) any {
 		} else {
 			log.Printf("read file %s failed: %v", arg.File, err)
 		}
-	} else if size, _ := unit.ParseBytes(arg.Size); size > 0 {
+	} else if size, _ := ss.ParseBytes(arg.Size); size > 0 {
 		token = make([]byte, size)
 		rand.New(rand.NewSource(time.Now().UnixNano())).Read(token)
 	}
@@ -890,7 +889,7 @@ func Random(args string) any {
 		return ss.Rand().String(i)
 	}
 
-	if size, err := unit.ParseBytes(args); err == nil {
+	if size, err := ss.ParseBytes(args); err == nil {
 		b := make([]byte, size*3/4)
 		n, _ := crand.Read(b)
 		return base64.RawURLEncoding.EncodeToString(b[:n])
